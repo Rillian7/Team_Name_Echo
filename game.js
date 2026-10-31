@@ -40,7 +40,7 @@ const control=target(box(.6,.14,.38,-1.4,1.04,2.6,edge),'intercom');for(let i=0;
 // desk lamp.
 cyl(.23,.27,.06,2.9,1.02,2.25,steel);rod([2.9,1.05,2.25],[2.88,1.6,2.2],.035);rod([2.88,1.6,2.2],[2.58,1.9,1.96],.035);const shade=cyl(.08,.28,.28,2.5,1.87,1.91,mat(0x5c5740,.5,.4));shade.rotation.z=-.4;const lampDisk=cyl(.24,.24,.015,2.45,1.76,1.91,amber);lampDisk.rotation.z=-.4;
 // headphones and coil cable.
-const hp=new T.Group();hp.position.set(.6,1.05,2.72);hp.rotation.x=-1.3;scene.add(hp);mesh(new T.TorusGeometry(.26,.025,8,20,Math.PI),steel,0,.1,0,hp);for(const x of [-.26,.26])box(.12,.25,.18,x,.06,0,dark,hp);const cable=[];for(let i=0;i<60;i++)cable.push(new T.Vector3(-1.1+i*.035,1.005,2.97+Math.sin(i)*.018));scene.add(new T.Line(new T.BufferGeometry().setFromPoints(cable),new T.LineBasicMaterial({color:0x16251a})));
+const hp=new T.Group();hp.position.set(.6,1.05,2.72);hp.rotation.x=-1.3;scene.add(hp);mesh(new T.TorusGeometry(.26,.025,8,20,Math.PI),steel,0,.1,0,hp);for(const x of [-.26,.26])box(.12,.25,.18,x,.06,0,dark,hp);
 // Glass reconstruction: deliberately faceted sculptural human, no flesh textures.
 const glass=new T.MeshPhysicalMaterial({color:0xb9daca,metalness:.12,roughness:.2,transparent:true,opacity:.53,transmission:.18,thickness:.35,ior:1.42,emissive:0x315b4f,emissiveIntensity:.35,side:T.DoubleSide,depthWrite:false,flatShading:true});
 const echo=new T.Group();scene.add(echo);echo.position.set(0,0,-1.3);echo.scale.setScalar(1.13);const body=new T.Group();echo.add(body);

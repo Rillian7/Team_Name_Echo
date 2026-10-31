@@ -54,6 +54,7 @@ export function createScenePolish(T,scene,api){
   sign('ECHO / UNIT 04','AUTHORIZED PERSONNEL ONLY',-4.05,3.46,-6.63,2.1,.42);
   // A real service readout updates when the dossier changes.
   const readout=flatPanel(1.64,.53,-.65,2.85,-6.67,()=>{});
+  readout.plane.visible=false; // Keep the subject silhouette unobstructed.
   function drawReadout(t=0){
     const g=readout.ctx,W=readout.canvas.width,H=readout.canvas.height;
     g.fillStyle='#071711';g.fillRect(0,0,W,H);
@@ -65,21 +66,7 @@ export function createScenePolish(T,scene,api){
   }
   drawReadout();
   sign('BIO-MEMETIC ARRAY','DO NOT DISCONNECT',2.05,3.46,-6.67,1.95,.35);
-  // Scanner frame behind the subject: visible shape, not arbitrary decoration.
-  const scanner=new T.Group();scanner.position.set(0,1.35,-2.7);scene.add(scanner);
-  const torus=(rad,tube,material,rx=0)=>{const o=mesh(new T.TorusGeometry(rad,tube,8,64),material,0,0,0,scanner);o.rotation.x=rx;o.castShadow=false;return o;};
-  torus(1.37,.054,charcoal);torus(1.29,.013,dimPhosphor);torus(1.12,.013,nickel);
-  const scannerMarkers=[];
-  for(let i=0;i<32;i++){
-    const a=i*Math.PI*2/32;
-    const tick=box(i%4===0?.095:.048,i%4===0?.019:.01,.01,Math.cos(a)*1.36,1.35+Math.sin(a)*1.36,-2.67,i%4===0?signalAmber:dimPhosphor);
-    tick.rotation.z=a;scannerMarkers.push(tick);
-  }
-  for(let s of [-1,1]){
-    rod([s*1.39,.12,-2.73],[s*1.39,2.8,-2.73],.04,nickel);
-    box(.27,.17,.25,s*1.39,.30,-2.7,charcoal);
-    box(.21,.17,.25,s*1.39,2.66,-2.7,charcoal);
-  }
+  // Scanner frame removed to leave the subject’s head unobstructed.
   // Layered circular base with tiny emissive registration notches.
   const platform=new T.Group();platform.position.set(0,.09,-1.3);scene.add(platform);
   for(const r of [.77,.88,.98]){
@@ -173,7 +160,6 @@ export function createScenePolish(T,scene,api){
       other.rotation.y=Math.sin(time*.35+i)*.03;
       other.position.y=Math.sin(time*.7+i*2)*.012;
     });}
-    scanner.rotation.z=Math.sin(time*.15)*.01;
     const pulse=Math.sin(time*1.4)*.12+.85;
     dimPhosphor.opacity=(.22+fx.stress*.18)*pulse;
     phosphor.opacity=.53+Math.sin(time*2)*.12;

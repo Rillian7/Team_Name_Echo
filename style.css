@@ -14,7 +14,8 @@ header{padding:20px 36px;z-index:5;border-bottom:1px solid #cde8cd12;background:
 #integrity{top:139px;border-top:1px solid #cee9c355;padding-top:17px;width:205px}
 #frame-label{position:fixed;right:36px;bottom:92px;font:9px monospace;letter-spacing:1.5px;color:#afc4b289;text-shadow:1px 1px 5px #07130d}
 #frame-label span{color:#dda67c}
-#hover{top:55%;padding:7px 13px;background:#0b1a1399;min-height:22px;border-radius:2px;text-shadow:0 1px 6px #000}
+#hover{top:55%;padding:0;background:none;min-height:0;pointer-events:none;text-shadow:0 1px 6px #000}
+#hover:empty{display:none}
 #dialogue{width:min(700px,90vw);bottom:100px;border-left:3px solid var(--accent);border-top:1px solid #c9dbc421;background:linear-gradient(96deg,#071610f5,#0d1a15e8);box-shadow:0 14px 65px #000a;backdrop-filter:blur(9px)}
 #speaker{color:#f0c884;font-weight:800}
 #line{font-size:18px;line-height:1.55;letter-spacing:.1px}
