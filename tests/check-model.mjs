@@ -11,7 +11,7 @@ assert.ok(silhouette);
 assert.equal(silhouette.material, glass);
 assert.equal(silhouette.geometry.index.count, humanBody.indices.length);
 assert.equal(annaHair.parent, headEcho);
-assert.equal(annaHair.visible, false);
+assert.equal(annaHair.visible, true);
 assert.equal(annaHair.children.length, 2);
 assert.ok(annaHair.children.every((mesh) => mesh.material === glass));
 assert.ok(annaHair.children.every((mesh) => mesh.geometry.attributes.color));

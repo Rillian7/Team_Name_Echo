@@ -16,7 +16,7 @@ export function createAtmosphere({ getAudio, getView, getLights }) {
   source.buffer=noise;source.loop=true;filter.type='lowpass';filter.frequency.value=950;
   air.gain.value=music.gain.value=0;
   source.connect(filter);filter.connect(air);air.connect(master);music.connect(master);source.start();
-  bed={air,music,source,filter};nextNote=audio.currentTime+.6;
+  bed={air,music,source,filter};nextNote=audio.currentTime+.1;
  }
  function update(time,dt) {
   const v=getView(),{audio,master,humGain}=getAudio();
@@ -28,13 +28,13 @@ export function createAtmosphere({ getAudio, getView, getLights }) {
   if(quiet&&!v.ending)ceiling.intensity+=(14-ceiling.intensity)*Math.min(1,dt*.8);
   if(!audio||!master||!v.started)return;
   if(!bed)init(audio,master);
-  const duck=(v.currentLine || v.listening) ? .12 : 1;
+  const duck=v.listening ? .08 : v.talking ? .32 : 1;
   const silent=v.ending||quiet||v.state==='release'||v.state==='archiveOpening'||v.state==='archiveInspect'||v.state==='archiveResponse';
   const comfort=peak>=48?.12:peak>=20?.45:1;
   const key=[silent,comfort,duck].join(':');
   if(key!==mixKey) {
    smooth(bed.air.gain,silent?0:.055*comfort*duck,audio);
-   smooth(bed.music.gain,silent?0:.026*comfort*duck,audio);
+   smooth(bed.music.gain,silent?0:.16*comfort*duck,audio);
    mixKey=key;
   }
   // Preserve ending sound envelopes scheduled by interaction-polish.
@@ -46,7 +46,7 @@ export function createAtmosphere({ getAudio, getView, getLights }) {
    }
   }
   if(silent||audio.currentTime<nextNote)return;
-  nextNote=audio.currentTime+2.2;
+  nextNote=audio.currentTime+.78;
   const index=noteIndex++;
   if(peak>=48&&index%4!==0||peak>=20&&index%3===1)return;
   // Piano-like hammer attack and independently decaying string partials.
