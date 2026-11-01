@@ -1898,3 +1898,21 @@ body:has(#status.critical) #ending {
     opacity: .12;
   }
 }
+
+/* Contextual guidance is anchored to equipment, never to the mouse cursor. */
+#interaction-guides { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+.interaction-guide {
+  position: absolute; transform: translate(-50%, -100%); max-width: 220px;
+  padding: 9px 12px; color: #f2dbac; background: #10251fef;
+  border: 1px solid #b79b65; border-radius: 3px;
+  font: 600 11px/1.4 monospace; letter-spacing: .06em; text-align: center;
+  box-shadow: 0 0 0 5px #d9bc8510, 0 3px 18px #0008;
+}
+.interaction-guide::after {
+  content: ''; position: absolute; left: 50%; top: 100%; height: 20px;
+  border-left: 1px solid #d9bc85;
+}
+button.interaction-guide { pointer-events: auto; cursor: pointer; }
+button.interaction-guide:hover, button.interaction-guide:focus-visible { background: #304a38; outline: 2px solid #f2dbac; outline-offset: 3px; }
+#tools button.guided-tool { border-color: #d9bc85; color: #f2dbac; background: #344435; box-shadow: inset 0 0 0 1px #d9bc8566; }
+@media (max-width: 700px) { .interaction-guide { font-size: 9px; max-width: 150px; padding: 6px 8px; } }

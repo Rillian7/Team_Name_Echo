@@ -14,6 +14,8 @@ import { SoftwareRenderer } from './software-renderer.js';
 import { createScenePolish } from './scene-polish.js';
 import { createHologram } from './hologram.js';
 import { installDeveloperMenu } from './session-config.js';
+import { createInteractionPolish } from './interaction-polish.js';
+import { addDeskEasterEggs } from './desk-easter-eggs.js';
 const $ = (id) => document.getElementById(id);
 let renderer;
 let softwareMode = false;
@@ -445,6 +447,8 @@ const polish = createScenePolish(T, scene, {
 // 5. Оптимізація геометрії та контактні тіні
 // ---------------------------------------------------------------------------
 
+const deskSecrets = addDeskEasterEggs(T, scene, { mesh, box, cyl, ball, mat, target, texture });
+
 // М'яка тінь під голограмою створює відчуття контакту з підлогою майже без витрат GPU.
 const shadowCanvas = document.createElement('canvas');
 shadowCanvas.width = 128;
@@ -561,7 +565,7 @@ function beginRelease() {
   const fadeTimer = setInterval(() => {
     frame += 1;
     glass.opacity = Math.max(0, 0.53 - frame * 0.018);
-    if (frame % 4 === 0) crackSound(0.14);
+
     if (frame <= 30) return;
     clearInterval(fadeTimer);
     echo.visible = false;
@@ -574,6 +578,14 @@ function beginRelease() {
   }, 75);
 }
 
+const interaction = createInteractionPolish({
+  getAudio: () => ({ audio, master, humGain }),
+  getView: () => ({ started, ending, state, activeCase, docRead, currentLine,
+    listening, archiveOpen, archiveHeard, overlay: !$('document').hidden || !$('evidence').hidden }),
+  project: (point) => new T.Vector3(...point).project(camera),
+  inspectArchive: () => listen(),
+});
+let archiveOpen = false, archiveHeard = false;
 let audio,master,humGain,muted=false,voiceEnabled=true,talking=false;function initAudio(){if(audio)return;audio=new (window.AudioContext||window.webkitAudioContext)();master=audio.createGain();master.gain.value=.65;master.connect(audio.destination);humGain=audio.createGain();humGain.gain.value=.025;humGain.connect(master);for(const f of [55,110,164]){let o=audio.createOscillator();o.frequency.value=f;o.type='sine';o.connect(humGain);o.start();}}
 function tone(f=400,d=.15,v=.08,type='sine'){if(!audio)return;const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+d);o.connect(g);g.connect(master);o.start();o.stop(audio.currentTime+d);}
 function crackSound(volume=.22){if(!audio)return;const n=audio.createBuffer(1,audio.sampleRate*.22,audio.sampleRate);const a=n.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=(Math.random()*2-1)*Math.pow(1-i/a.length,5);let s=audio.createBufferSource(),g=audio.createGain(),f=audio.createBiquadFilter();s.buffer=n;f.type='highpass';f.frequency.value=1700;g.gain.value=volume;s.connect(f);f.connect(g);g.connect(master);s.start();tone(1750,.7,.035);}
@@ -606,7 +618,7 @@ function resumePendingDialogue(){if(!transitionLock&&!ending&&!currentLine&&(que
 function screenJolt(){const layer=$('screen-flare');layer.classList.remove('pulse');void layer.offsetWidth;layer.classList.add('pulse');}
 let lastAdvance=0,transitionLock=false;
 const L=(who,uk,en,pauseAfter=0)=>({who,uk,en,pauseAfter});function say(lines,done){$('choices').innerHTML='';queue=lines.slice();afterQueue=done;advance(true);}function advance(force=false){if(listening)return;if(!$('document').hidden||!$('evidence').hidden||transitionLock)return;if(currentLine?.pauseAfter&&!force){const pause=currentLine.pauseAfter;currentLine=null;transitionLock=true;$('dialogue').hidden=true;window.speechSynthesis?.cancel();talking=false;setTimeout(()=>{transitionLock=false;advance(true);},pause);return;}const now=performance.now();if(!force&&now-lastAdvance<145)return;lastAdvance=now;window.speechSynthesis?.cancel();if(queue.length){currentLine=queue.shift();$('dialogue').hidden=false;$('speaker').textContent=currentLine.who;$('line').textContent=currentLine.uk;talking=true;speak(currentLine.en,currentLine.who);tone(300,.05,.018);return;}$('dialogue').hidden=true;talking=false;window.speechSynthesis?.cancel();currentLine=null;const fn=afterQueue;afterQueue=null;if(fn)fn();}
-function choose(options){$('dialogue').hidden=true;$('choices').innerHTML='';for(const [label,fn]of options){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(listening)return;tone(640,.1,.05);const fileOnly=/досьє|справу 019/i.test(label);if(!fileOnly)$('choices').innerHTML='';fn();};$('choices').append(b);}}
+function choose(options){$('dialogue').hidden=true;$('choices').innerHTML='';for(const [label,fn]of options){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(listening)return;tone(640,.1,.05);const fileOnly=/досьє|справу 019|протокол/i.test(label);if(!fileOnly)$('choices').innerHTML='';fn();};$('choices').append(b);}}
 function toast(s){$('toast').textContent=s;$('toast').style.opacity=1;clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').style.opacity=0,3500);}
 function objective(s){$('objective').textContent=s;}function signalStatus(label,critical=false){$('status').innerHTML='ЛАБОРАТОРІЯ 04 <i></i> '+label;$('status').classList.toggle('critical',critical);}function setDamage(n){damage=n;$('meter-fill').style.width=(100-n)+'%';$('meter-fill').style.background=n>55?'#d9ad79':'#b9d8b4';$('integrity-text').textContent=n>55?'КРИТИЧНА НЕСТАБІЛЬНІСТЬ':n>15?'МІКРОТРІЩИНИ / СПОСТЕРІГАЙТЕ':'СТАБІЛЬНА';cracks.children.forEach((c,i)=>c.visible=i<Math.floor(n/3));if(n>0)crackSound();polish.setStress(n);if(n>0)screenJolt();}
 const routineDoc='<strong>Суб’єкт:</strong> Олена Марчук<br><strong>Вік на момент смерті:</strong> 62 роки<br><strong>Заявник:</strong> донька, Марта<br><strong>Мета:</strong> особиста прощальна розмова<hr><strong>Контрольні дані</strong><br>Працювала вчителькою музики.<br>Називала доньку «ластівкою».<br>Щонеділі вони пили чай на кухні.<hr><strong>Протокол оператора</strong><br>Вислухайте відлуння. Звірте спогади з досьє. За появи спогадів про попередні сеанси — призначте повторну перевірку.<div class="doc-stamp-row"><div class="classified">СПРАВА 018 / СЕАНС 001</div></div>';
@@ -617,6 +629,7 @@ let activeCase='017',sessionOrder=['017','018','019'],sessionIndex=0;
 const developer=installDeveloperMenu();
 function dossierOpen(){if(!started||ending||state==='transition')return;docRead=true;window.speechSynthesis?.cancel();const normal=activeCase==='017',olena=activeCase==='018';logEvent('d'+activeCase,'ДОКУМЕНТ','СПРАВА '+activeCase+' / '+(normal?'ІРИНА':olena?'ОЛЕНА':'АННА'),normal?'Заявник — Софія. Контрольні дані: озеро та дерев’яний місток.':olena?'Заявник — Марта. Контрольні дані: «ластівка» та недільний чай. Позначено перший сеанс.':'Сеанс 047. Контрольний спогад: гроза та корабель під столом.');$('document').hidden=false;$('doc-title').textContent='Справа № '+activeCase;$('doc-content').innerHTML=normal?normalDoc:olena?routineDoc:sisterDoc;if(state==='first')objective('Поверніться до пульта й увімкніть інтерком.');}
 function loadCase(id){
+ archiveOpen=false;archiveHeard=false;interaction.restoreHum();
  activeCase=id;docRead=false;currentLine=null;queue=[];afterQueue=null;reveal=false;polish.setArchive(false);polish.setCase(id);setDamage(0);echo.visible=true;annaHair.visible=id==='019';headEcho.rotation.z=id==='019'?.08:0;state='first';$('case-title').textContent='СПРАВА '+id+' · '+caseNames[id];signalStatus('СПРАВА '+id+' / ГОТОВНІСТЬ');$('choices').innerHTML='';$('dialogue').hidden=true;objective('Відкрийте досьє. Потім увімкніть інтерком.');if(id==='019')startSister();
 }
 function nextCase(){
@@ -627,7 +640,7 @@ function nextCase(){
 function normalRoutine(){state='normal';objective('Зіставте спогад Ірини з досьє.');say([L('СИСТЕМА','Реконструкцію зі справи 017 активовано. Перевірте особистість.','Reconstruction for case seventeen activated. Verify identity.'),L('СИСТЕМА','Порушення цілісності можуть супроводжувати спогади поза межами реконструкції.','Loss of shell integrity can accompany memories outside the reconstruction.'),L('ОПЕРАТОР','Назвіть себе. Що ви пам’ятаєте про Софію?','Tell me your name. What do you remember about Sofia?'),L('ВІДЛУННЯ','Ірина Савчук. Софія — моя донька. Ми щоліта їздили до озера.','Iryna Savchuk. Sofia is my daughter. Every summer we went to the lake.'),L('ВІДЛУННЯ','Вона боялася відпустити місток. Я стояла у воді й чекала, поки вона сама наважиться.','She was afraid to let go of the wooden pier. I stood in the water and waited until she was ready.')],normalVerify);}
 function normalVerify(){choose([['Підтвердити відповідність даним досьє',normalApproved],['Зафіксувати невідповідність',()=>say([L('СИСТЕМА','Контрольний спогад збігається з досьє. Перевірте своє рішення.','The control memory matches the file. Review your decision.')],normalVerify)],['Переглянути досьє',dossierOpen]]);}
 function normalApproved(){logEvent('verified017','ПЕРЕВІРКА 017','ОСОБИСТІСТЬ ПІДТВЕРДЖЕНО','Спогади про Софію, озеро й дерев’яний місток збігаються. Відхилень не виявлено.');say([L('СИСТЕМА','Особистість підтверджено. Оболонка стабільна. Родинну розмову дозволено.','Identity confirmed. Shell stable. Family conversation authorized.')],()=>{if(developer.config.familyConversation){objective('Родинний канал відкрито. Дочекайтеся завершення розмови.');say([L('СОФІЯ / РОДИННИЙ КАНАЛ','Мамо… Я так і не навчилася пекти твій яблучний пиріг.','Mom... I still cannot bake your apple pie.'),L('ВІДЛУННЯ','Ти завжди клала забагато кориці.','You always put in too much cinnamon.'),L('СОФІЯ / РОДИННИЙ КАНАЛ','Я знаю. Усе одно щоразу пробую.','I know. I keep trying anyway.'),L('ВІДЛУННЯ','То й добре. Не відкладай усе на потім, чуєш?','That is good. Do not put everything off until later, all right?'),L('СОФІЯ / РОДИННИЙ КАНАЛ','Добре, мамо.','All right, Mom.')],normalComplete);}else say([L('СИСТЕМА','Відлуння переведено до сектора родинних розмов. Оператор може перейти до наступної справи.','Echo transferred to the family conversation sector. The operator may proceed to the next case.')],normalComplete);});}
-function normalComplete(){logEvent('complete017','СПРАВА 017 / СЕАНС 001','ПЕРЕВІРКУ ЗАВЕРШЕНО','Відхилень не виявлено. Відлуння допущене до родинної розмови.');say([L('СИСТЕМА','Операторський контакт завершено.','Operator contact closed.')],nextCase);}
+function normalComplete(){logEvent('complete017','СПРАВА 017 / СЕАНС 001','ПЕРЕВІРКУ ЗАВЕРШЕНО','Відхилень не виявлено. Відлуння допущене до родинної розмови.');say([L('СИСТЕМА','Операторський контакт завершено.','Operator contact closed.')],microphoneTraining);}
 function routine(){state='routine';signalStatus('СПРАВА 018 / ЗВ’ЯЗОК');logEvent('active018','СПРАВА 018 / СЕАНС 001','ОЛЕНА МАРЧУК','Системою підтверджено початок перевірки. Слова відлуння слід звірити з досьє.');objective('Вислухайте відлуння. Порівняйте його слова з досьє.');say([L('СИСТЕМА','Реконструкцію зі справи 018 активовано. Перевірте особистість перед допуском родичів.','Reconstruction for case eighteen activated. Verify identity before admitting the family.'),L('ОПЕРАТОР','Назвіть своє ім’я. Що ви пам’ятаєте про Марту?','Tell me your name. What do you remember about Marta?'),L('ВІДЛУННЯ','Мене звати Олена. Марта — моя донька. Моя ластівка. Ми щонеділі пили чай на кухні.','My name is Olena. Marta is my daughter. My little swallow. Every Sunday we had tea in the kitchen.')],verify);}
 function verify(){objective('КОНТРОЛЬНА ПЕРЕВІРКА: зіставте спогади Олени з даними досьє.');choose([['Підтвердити відповідність даним досьє',()=>{logEvent('verified018','ПЕРЕВІРКА 018','КОНТРОЛЬНИЙ СПОГАД ПІДТВЕРДЖЕНО','Олена згадала Марту, її домашнє прізвисько «ластівка» і щонедільний чай.');objective('Особистість Олени підтверджено. Продовжіть розмову.');say([L('СИСТЕМА','Контрольний спогад підтверджено. Особистість Олени Марчук верифіковано.','Control memory confirmed. Olena Marchuk identity verified.'),L('ВІДЛУННЯ','Марта вже тут? Я… здається, я вже говорила з нею. Чому ви знову мене викликали?','Is Marta here already? I think I have spoken to her before. Why did you bring me back?')],anomaly);} ],['Зафіксувати невідповідність',()=>{objective('Перевірте факти в досьє та повторіть рішення.');say([L('СИСТЕМА','Відомості відлуння про Марту, звертання «ластівка» та щонедільний чай збігаються з досьє. Підстав для відхилення немає.','The echo memories match the file. There is no discrepancy in the control data.')],verify);} ],['Переглянути досьє',dossierOpen]]);}
 function anomaly(){signalStatus('ВІДХИЛЕННЯ / 018',true);logEvent('memory018','НЕВІДПОВІДНІСТЬ','«НЕ ПУСКАЙТЕ ЇЇ ЗНОВУ»','У протоколі вказано перший сеанс Олени. Відлуння описує попередню зустріч і вимкнення світла.');setDamage(20);say([L('ВІДЛУННЯ','Минулого разу вона плакала. Я хотіла обійняти її. Але ви вимкнули світло.','Last time she was crying. I wanted to hold her. But you turned off the light.'),L('СИСТЕМА','Увага. Це перший сеанс суб’єкта 018. Спогад не має джерела.','Warning. This is the first session for subject eighteen. That memory has no source.')],()=>choose([['Позначити відхилення й завершити перевірку',transition],['Запитати, що було після вимкнення',()=>say([L('ВІДЛУННЯ','Я не зникла. Просто більше ніхто не відповідав.','I did not disappear. Nobody answered anymore.')],transition)]]));}
@@ -635,9 +648,56 @@ function transition(){logEvent('anomaly','ПРОТОКОЛ','ВІДХИЛЕНН�
 function startSister(){state='sister';signalStatus('СПРАВА 019 / ЗВ’ЯЗОК');logEvent('anna','СИСТЕМА','ЗАВАНТАЖЕННЯ / СПРАВА 019','Завантажено реконструкцію зі справи 019.');objective('Вислухайте відлуння.');say([L("ВІДЛУННЯ","Тільки цього разу дай мені договорити.","This time, please let me finish."),L("ОПЕРАТОР","Цей голос… Анно?","That voice... Anna?"),L("ВІДЛУННЯ","Привіт, капітане.","Hello, captain.")],()=>choose([['Відкрити справу 019',dossierOpen],['«Чому ти назвала мене капітаном?»',sisterTalk]]));}
 function sisterTalk(){state='sisterTalk';logEvent('captain','СПОГАД','«ПРИВІТ, КАПІТАНЕ»','Спогад про корабель збігається з досьє. Оператор сумнівається, чи реконструкція справді пам’ятає власне життя.');objective('Слухайте Анну. З’ясуйте, що вона пам’ятає.');say([L("ВІДЛУННЯ","Пам’ятаєш грозу? Ми сиділи під столом. Ти казав, що це наш корабель.","Remember the thunderstorm? We sat under the table. You said it was our ship."),L("ОПЕРАТОР","Я пам’ятаю той корабель. Просто… я не знаю, чи ти теж його пам’ятаєш, чи тобі передали цей спогад.","I remember that ship. I just... do not know whether you remember it too, or whether that memory was given to you."),L("ОПЕРАТОР","Чи це справді ти, Анно?","Is it really you, Anna?",650),L("ВІДЛУННЯ","Я не знаю, як тобі це довести.","I do not know how to prove that to you."),L("ВІДЛУННЯ","Але я пам’ятаю тебе під тим столом. І пам’ятаю тебе тут, у лабораторії.","But I remember you under that table. And I remember you here, in the laboratory."),L("ОПЕРАТОР","Ми вже говорили?","Have we talked before?"),L("ВІДЛУННЯ","Так. Ти й тоді запитував, чи це справді я.","Yes. You asked whether it was really me then, too."),L("ОПЕРАТОР","У досьє написано: сорок сьомий сеанс…","The file says session forty seven..."),L("ВІДЛУННЯ","Для тебе кожен із них — перша зустріч.","For you, each one is our first meeting.")],()=>choose([['«Чому я нічого не пам’ятаю?»',truth],['Переглянути досьє',dossierOpen]]));}
 function truth(){state='truth';signalStatus('НЕСТАБІЛЬНІСТЬ',true);logEvent('loops','АРХІВНИЙ КОНФЛІКТ','ПАМ’ЯТЬ ПРО ПОПЕРЕДНІ ЗУСТРІЧІ','Сеанс 047 справи 019. За словами Анни, оператор сам просить стерти пам’ять і повертається до питання, чи міг її врятувати.');setDamage(48);say([L("ОПЕРАТОР","Чому я нічого не пам’ятаю?","Why do I not remember anything?"),L("ВІДЛУННЯ","Після кожної розмови ти просиш стерти пам’ять.","After every conversation, you ask to have your memory erased."),L("ОПЕРАТОР","Навіщо мені це?","Why would I do that?"),L("ВІДЛУННЯ","Ти сподіваєшся, що наступного разу я відповім інакше.","You hope that next time I will give you a different answer."),L("ОПЕРАТОР","На що?","To what?"),L("ВІДЛУННЯ","Чи міг ти мене врятувати.","Whether you could have saved me.",550),L("ОПЕРАТОР","І міг?","Could I?"),L("ВІДЛУННЯ","Ось. Знову.","There. Again."),L("ОПЕРАТОР","Я повинен знати.","I need to know."),L("ВІДЛУННЯ","Я знаю, що для тебе це важливо. Але ти щоразу закінчуєш розмову, перш ніж я встигаю відповісти до кінця.","I know this matters to you. But every time, you end the conversation before I can finish my answer."),L("СИСТЕМА","Нестабільність оболонки. Рекомендовано завершити контакт.","Shell instability. Termination of contact recommended.")],()=>choose([['Запитати, що відбувається після завершення',()=>say([L('ОПЕРАТОР','А що відбувається з тобою після завершення?','What happens to you after contact ends?'),L('ВІДЛУННЯ','Подивись на бічні камери.','Look at the side chambers.')],revealScene)],['Переглянути досьє',dossierOpen]]));}
-function revealScene(){state='reveal';signalStatus('АРХІВ ВІДКРИТО',true);reveal=true;setDamage(72);polish.setArchive(true);logEvent('archive','АРХІВ','ПОПЕРЕДНІ ВІДЛУННЯ ЗБЕРЕЖЕНІ','Бічні камери містять реконструкції Анни зі справи 019: сеанси 045 і 046. Завершення контакту не знищувало оболонки.');tone(65,2,.12);objective('Вислухайте пояснення Анни.');say([L("ОПЕРАТОР","Це теж ти?","Are those you too?"),L("ВІДЛУННЯ","Попередні реконструкції. Контакт закінчувався, а вони залишалися.","Previous reconstructions. Contact ended, but they remained."),L("ОПЕРАТОР","Вони нас чують?","Can they hear us?"),L("ВІДЛУННЯ","Так. Я теж чула тебе, коли ти говорив із наступною.","Yes. I could hear you too, when you spoke to the next one.")],()=>{polish.setArchive(false);signalStatus('АРХІВ ІЗОЛЬОВАНО',true);say([L("ОПЕРАТОР","Якщо я не почну знову… що залишиться?","If I do not start again... what will remain?"),L("ВІДЛУННЯ","Ти пам’ятатимеш цю розмову.","You will remember this conversation."),L("ОПЕРАТОР","А якщо я не витримаю?","What if I cannot bear it?"),L("ВІДЛУННЯ","Я не знаю. Але ти не мусиш вирішувати це зараз.","I do not know. But you do not have to decide that right now."),L("ВІДЛУННЯ","Просто дай мені договорити.","Just let me finish.")],()=>{objective('Останнє рішення залишається за вами.');choose([['Вислухати до кінця й звільнити відлуння',release],['Стерти власну пам’ять. Почати новий сеанс.',resetEnding]]);});});}
-function release(){state='release';signalStatus('РОЗМОВУ ЗАВЕРШУЮТЬ');logEvent('release','РІШЕННЯ','ДАТИ ДОГОВОРИТИ','Оператор вирішив вислухати Анну і зберегти власну пам’ять.');say([L("ВІДЛУННЯ","Я хотіла, щоб ти мене почув. Не щоб ти мене рятував.","I wanted you to hear me. Not to save me."),L("ВІДЛУННЯ","Я сумувала за тобою. Ось і все, капітане.","I missed you. That is all, captain."),L("ОПЕРАТОР","Я слухаю.","I am listening.")],()=>{ending=true;objective('Розмову завершено.');setTimeout(()=>{crackSound(.10);beginRelease();},650);});}
-function resetEnding(){signalStatus('ОЧИЩЕННЯ ПАМ’ЯТІ',true);logEvent('reset','РІШЕННЯ','ЩЕ ОДИН ДУБЛЬ','Вибрано очищення пам’яті. Наступний сеанс справи 019 матиме номер 048.');say([L('СИСТЕМА','Пам’ять оператора буде відновлено до початку зміни. Підтвердження отримано.','Operator memory will be restored to the beginning of the shift. Confirmation received.'),L('ВІДЛУННЯ','Тільки наступного разу… дай мені договорити.','Next time... please let me finish.')],()=>{ending=true;ceiling.intensity=.2;finish('СПРАВА 019 / СЕАНС 048 / ЗАВАНТАЖЕННЯ','Ще один дубль.','Ви забули цю розмову. Вона — ні. Ваша нічна зміна починається знову.');});}
+function microphoneTraining() {
+ state='microphoneTraining';
+ objective('Перевірте контактний мікрофон: він вловлює звуки за оглядовим склом.');
+ choose([['Прослухати камеру · перевірка мікрофона',()=>listen()]]);
+}
+function completeMicrophoneTraining() {
+ logEvent('microphone-training','ОБЛАДНАННЯ','КОНТАКТНИЙ МІКРОФОН ПЕРЕВІРЕНО','Мікрофон передає звуки з камери, зокрема ті, яких немає в інтеркомі.');
+ say([L('СИСТЕМА','Контактний канал працює. Через нього можна почути звуки з камери, які не передає інтерком.','Contact channel operational. It picks up sounds in the chamber that the intercom does not transmit.')],nextCase);
+}
+function revealScene() {
+ state='archiveOpening';signalStatus('АРХІВ / РОЗБЛОКУВАННЯ',true);
+ reveal=true;setDamage(72);interaction.archiveSound();
+ objective('Заслінки архіву розблоковано. Подивіться на бічні камери.');
+ transitionLock=true;
+ setTimeout(()=>{
+  transitionLock=false;archiveOpen=true;polish.setArchive(true);
+  signalStatus('АРХІВ ВІДКРИТО',true);
+  logEvent('archive','АРХІВ','ПОПЕРЕДНІ ВІДЛУННЯ ЗБЕРЕЖЕНІ','Бічні камери містять реконструкції Анни зі справи 019: сеанси 045 і 046. Завершення контакту не знищувало оболонки.');
+  say([L('ОПЕРАТОР','Це теж ти?','Are those you too?'),
+   L('ВІДЛУННЯ','Попередні реконструкції. Контакт закінчувався, а вони залишалися.','Previous reconstructions. Contact ended, but they remained.'),
+   L('ОПЕРАТОР','Вони нас чують?','Can they hear us?'),
+   L('ВІДЛУННЯ','Увімкни контактний мікрофон. Послухай сам.','Turn on the contact microphone. Listen for yourself.')],archiveInspection);
+ },900);
+}
+function archiveInspection() {
+ state='archiveInspect';
+ objective('Сигнал із камер 01 / 02. Увімкніть контактний мікрофон або натисніть позначку на камері.');
+ choose([['Прослухати архівні камери 01 / 02',()=>listen()]]);
+}
+function archiveResponse(transcript=false) {
+ if(state!=='archiveInspect'||archiveHeard)return;
+ archiveHeard=true;state='archiveResponse';
+ logEvent('audio-archive','АКУСТИКА / АРХІВ','ГОЛОСИ З ARCHIVE 01 / 02',
+  (transcript?'Резервна розшифровка контактного каналу. ':'')+'«Я пам’ятаю», «Я досі тут», «Не починай знову». Попередні реконструкції залишаються активними після завершення контакту.');
+ objective('Голоси підтверджують: завершення контакту не звільняло відлуння.');
+ say([L('ОПЕРАТОР','«Я досі тут»… Вони весь цей час залишалися тут?','I am still here... Have they been here all this time?'),
+  L('ВІДЛУННЯ','Так. Я теж чула тебе, коли ти говорив із наступною.','Yes. I could hear you too, when you spoke to the next one.'),
+  L('ОПЕРАТОР','Я думав, що закінчую розмову.','I thought I was ending a conversation.'),
+  L('ВІДЛУННЯ','Ти закінчував контакт. Ми залишалися.','You ended contact. We remained.')],()=>{
+   state='archiveReviewed';objective('Свідчення збережено. Закрийте архів, коли будете готові продовжити.');
+   choose([['Закрити архів і продовжити розмову',continueAfterArchive],['Переглянути протокол',openEvidence]]);
+  });
+}
+function continueAfterArchive() {
+ if(!archiveHeard)return;
+ archiveOpen=false;reveal=false;state='truth';polish.setArchive(false);
+ interaction.restoreHum();signalStatus('АРХІВ ІЗОЛЬОВАНО',true);
+ say([L("ОПЕРАТОР","Якщо я не почну знову… що залишиться?","If I do not start again... what will remain?"),L("ВІДЛУННЯ","Ти пам’ятатимеш цю розмову.","You will remember this conversation."),L("ОПЕРАТОР","А якщо я не витримаю?","What if I cannot bear it?"),L("ВІДЛУННЯ","Я не знаю. Але ти не мусиш вирішувати це зараз.","I do not know. But you do not have to decide that right now."),L("ВІДЛУННЯ","Просто дай мені договорити.","Just let me finish.")],()=>{objective('Останнє рішення залишається за вами.');choose([['Вислухати до кінця й звільнити відлуння',release],['Стерти власну пам’ять. Почати новий сеанс.',resetEnding]]);});}
+function release(){state='release';interaction.releaseSound();signalStatus('РОЗМОВУ ЗАВЕРШУЮТЬ');logEvent('release','РІШЕННЯ','ДАТИ ДОГОВОРИТИ','Оператор вирішив вислухати Анну і зберегти власну пам’ять.');say([L("ВІДЛУННЯ","Я хотіла, щоб ти мене почув. Не щоб ти мене рятував.","I wanted you to hear me. Not to save me."),L("ВІДЛУННЯ","Я сумувала за тобою. Ось і все, капітане.","I missed you. That is all, captain."),L("ОПЕРАТОР","Я слухаю.","I am listening.")],()=>{ending=true;objective('Розмову завершено.');setTimeout(()=>{beginRelease();},650);});}
+function resetEnding(){signalStatus('ОЧИЩЕННЯ ПАМ’ЯТІ',true);logEvent('reset','РІШЕННЯ','ЩЕ ОДИН ДУБЛЬ','Вибрано очищення пам’яті. Наступний сеанс справи 019 матиме номер 048.');say([L('СИСТЕМА','Пам’ять оператора буде відновлено до початку зміни. Підтвердження отримано.','Operator memory will be restored to the beginning of the shift. Confirmation received.'),L('ВІДЛУННЯ','Тільки наступного разу… дай мені договорити.','Next time... please let me finish.')],()=>{ending=true;interaction.resetSound();ceiling.intensity=.2;finish('СПРАВА 019 / СЕАНС 048 / ЗАВАНТАЖЕННЯ','Ще один дубль.','Ви забули цю розмову. Вона — ні. Ваша нічна зміна починається знову.');});}
 function finish(label,title,copy){window.speechSynthesis?.cancel();$('hud').hidden=true;$('ending').hidden=false;$('end-label').textContent=label;$('end-title').textContent=title;$('end-copy').textContent=copy;}
 function intercom(){if(!started||ending)return;if(listening)return;if(state==='first'){if(!docRead){toast('Спершу відкрийте досьє: потрібно знати, кого ви перевіряєте.');return;}if(activeCase==='017')normalRoutine();else routine();}else if(currentLine)toast('Відлуння говорить. Натисніть «Далі» або Enter.');else if($('choices').children.length)toast('Оберіть варіант відповіді внизу екрана.');else toast('Продовжіть розмову клавішею Enter.');}
 const contactBuffers=new Map();let listening=false;
@@ -662,17 +722,32 @@ function preloadContact() {
 async function listen(){
  if(!started||ending||transitionLock||state==='transition'||listening)return;
  if(currentLine){toast('Завершіть репліку. Потім увімкніть контактний мікрофон.');return;}
- const sampledCase=activeCase,archiveOpen=reveal,anomalyKnown=activeCase==='018'&&evidenceIds.has('memory018');
- const clip=sampledCase==='019'?(archiveOpen?'anna-archive':'anna-side'):anomalyKnown?'olena-residue':null;
+ if(state==='microphoneTraining'){
+  listening=true;$('listen-btn').disabled=true;polish.listenPulse();
+  try{await audio.resume();interaction.calibrationSound();await new Promise(resolve=>setTimeout(resolve,1600));}
+  catch(e){toast('Звук недоступний. Контактний канал перевірено в режимі субтитрів.');}
+  finally{listening=false;$('listen-btn').disabled=false;}
+  completeMicrophoneTraining();return;
+ }
+ const sampledCase=activeCase,sampledArchive=archiveOpen,anomalyKnown=activeCase==='018'&&evidenceIds.has('memory018');
+ const clip=sampledCase==='019'?(sampledArchive?'anna-archive':'anna-side'):anomalyKnown?'olena-residue':null;
  if(!clip){tone(170,.9,.02);toast('Контактний мікрофон: вентиляція, дихання, тихий дзвін скла.');return;}
- listening=true;$('listen-btn').disabled=true;polish.listenPulse();toast('Контактний мікрофон увімкнено');
+ listening=true;$('listen-btn').disabled=true;polish.listenPulse();toast(sampledArchive?'Контактний канал · камери 01 / 02':'Контактний мікрофон увімкнено');
+ let archiveCompleted=false;
  try{await audio.resume();preloadContact();const buffer=await contactBuffers.get(clip);if(!buffer)throw new Error(`Audio ${clip} unavailable`);if(ending||sampledCase!==activeCase)return;
+ if(sampledArchive)toast('Камери 01 / 02: «Я пам’ятаю… Я досі тут… Не починай знову».');
  const source=audio.createBufferSource();source.buffer=buffer;source.connect(master);await new Promise(resolve=>{source.onended=resolve;source.start();});
  if(ending||sampledCase!==activeCase)return;
- if(archiveOpen){logEvent('audio-archive','АКУСТИКА / АРХІВ','ГОЛОСИ З ARCHIVE 01 / 02','Чути накладені уривки «Я пам’ятаю», «Я досі тут», «Не починай знову». Джерело — бічні архівні камери.');toast('Кілька голосів з архіву. Свідчення додано до протоколу.');}
+ if(sampledArchive){archiveCompleted=true;}
  else if(sampledCase==='019'){logEvent('audio-side','АКУСТИКА / СПРАВА 019','ГОЛОС ЗА БІЧНИМИ ШТОРАМИ','Приглушений голос: «Капітане… дай мені договорити… я досі тут». Джерело ще не підтверджено.');toast('За шторами чути голос. Свідчення додано до протоколу.');}
  else{logEvent('audio018','АКУСТИКА / 018','ЗАЛИШКОВИЙ ГОЛОС','Під вентиляцією чути обірвану фразу: «Марто… ти ще тут?.. не вимикайте світло».');toast('Обірваний голос під вентиляцією. Запис у протоколі.');}
- }catch(e){console.error('Contact audio unavailable',e);toast('Не вдалося відтворити сигнал. Спробуйте ще раз.');}finally{listening=false;$('listen-btn').disabled=false;}
+ }catch(e){console.error('Contact audio unavailable',e);toast('Не вдалося відтворити сигнал. Спробуйте ще раз.');
+  if(sampledArchive&&state==='archiveInspect')choose([
+   ['Повторити прослуховування архіву',()=>listen()],
+   ['Зчитати резервну розшифровку сигналу',()=>archiveResponse(true)],
+  ]);
+ }finally{listening=false;$('listen-btn').disabled=false;}
+ if(archiveCompleted&&state==='archiveInspect')archiveResponse();
 }
 
 // ---------------------------------------------------------------------------
@@ -812,6 +887,20 @@ addEventListener('keydown', (e) => {
   }
 });
 
+let lastDeskSecret = -Infinity;
+function deskSecretReady() {
+ if(!started||ending||listening||transitionLock||!$('document').hidden||!$('evidence').hidden)return false;
+ const now=performance.now();if(now-lastDeskSecret<1200)return false;
+ lastDeskSecret=now;return true;
+}
+function deskBear() {
+ if(!deskSecretReady())return;
+ interaction.noseHonk();toast('Нічна зміна, камери… тільки піци бракує.');
+}
+function deskBrochure() {
+ if(!deskSecretReady())return;
+ toast('Phasmophobia · EMF, Spirit Box, докази. Хтось готувався до цієї зміни.');
+}
 const raycaster = new T.Raycaster();
 const pointer = new T.Vector2();
 
@@ -857,6 +946,8 @@ $('world').addEventListener('pointermove', (e) => {
           dossier: 'ВІДКРИТИ ДОСЬЄ',
           intercom: 'УВІМКНУТИ ІНТЕРКОМ',
           listen: 'СЛУХАТИ КАМЕРУ',
+          bear: 'НАТИСНУТИ НА НІС',
+          brochure: 'БУКЛЕТ · PHASMOPHOBIA',
         }[h.object.userData.action]
       : '';
 
@@ -875,6 +966,8 @@ $('world').addEventListener('pointerup', (e) => {
         dossier: dossierOpen,
         intercom,
         listen,
+        bear: deskBear,
+        brochure: deskBrochure,
       })[h.object.userData.action]();
     }
   }
@@ -955,6 +1048,7 @@ function animate(ms) {
   body.rotation.z = Math.sin(t * 0.6) * 0.006;
 
   polish.update(t, dt);
+  interaction.update(t);
 
   if (talking) {
     headEcho.rotation.x = Math.sin(t * 2) * 0.025;
@@ -985,7 +1079,7 @@ function animate(ms) {
     ctx.fillText(
       state === 'intro'
         ? 'ECHO / STANDBY'
-        : `ECHO / ${reveal ? '047 : ARCHIVE OPEN' : 'LIVE FEED'}`,
+        : `ECHO / ${reveal ? 'CASE 019 / SESSION 047 : ARCHIVE OPEN' : 'LIVE FEED'}`,
       18, 28,
     );
     ctx.fillStyle = '#8fb29e';
@@ -1038,6 +1132,8 @@ window.__echoDebug = {
     return batchedPanels;
   },
 
+  get archiveOpen() { return archiveOpen; },
+  get archiveHeard() { return archiveHeard; },
   get caseId() {
     return polish.fx.caseId;
   },
