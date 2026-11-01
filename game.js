@@ -11,12 +11,12 @@
 
 import * as T from './vendor/three.module.js';
 import { SoftwareRenderer } from './software-renderer.js';
-import { createScenePolish } from './scene-polish.js?v=glass-piano-6';
-import { createHologram } from './hologram.js?v=glass-piano-6';
+import { createScenePolish } from './scene-polish.js?v=clear-glass-7';
+import { createHologram } from './hologram.js?v=clear-glass-7';
 import { installDeveloperMenu } from './session-config.js';
-import { createAtmosphere } from './atmosphere.js?v=glass-piano-6';
-import { createInteractionPolish } from './interaction-polish.js?v=glass-piano-6';
-import { addDeskEasterEggs } from './desk-easter-eggs.js?v=glass-piano-6';
+import { createAtmosphere } from './atmosphere.js?v=clear-glass-7';
+import { createInteractionPolish } from './interaction-polish.js?v=clear-glass-7';
+import { addDeskEasterEggs } from './desk-easter-eggs.js?v=clear-glass-7';
 const $ = (id) => document.getElementById(id);
 let renderer;
 let softwareMode = false;
@@ -376,6 +376,21 @@ for (const x of [-0.26, 0.26]) box(0.12, 0.25, 0.18, x, 0.06, 0, dark, hp);
 const hologram = createHologram(T, softwareMode);
 const { echo, body, headEcho, annaHair, glass } = hologram;
 scene.add(echo);
+// Reflection panels provide visible highlights without brightening the body.
+if (!softwareMode) {
+ const faces = Array.from({length:6},(_,i)=>{
+  const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+  g.fillStyle='#182b28';g.fillRect(0,0,128,128);
+  const gradient=g.createLinearGradient(0,0,128,128);
+  gradient.addColorStop(0,'#142622');gradient.addColorStop(.45,'#617e76');gradient.addColorStop(1,'#122520');
+  g.fillStyle=gradient;g.fillRect(0,0,128,128);
+  g.fillStyle=i===2?'#effff8':'#b6d9d1';g.fillRect(i%2?84:24,8,8,112);
+  if(i===2)g.fillRect(12,46,104,14);return c;
+ });
+ const reflections=new T.CubeTexture(faces);reflections.colorSpace=T.SRGBColorSpace;reflections.needsUpdate=true;
+ glass.envMap=reflections;glass.needsUpdate=true;
+}
+const glassStartOpacity=glass.opacity;
 const cracks = new T.Group();
 body.add(cracks);
 const crackmat = new T.LineBasicMaterial({ color: 0xecf5df, transparent: true, opacity: 0.85 });
@@ -564,7 +579,7 @@ function beginRelease() {
   let frame = 0;
   const fadeTimer = setInterval(() => {
     frame += 1;
-    glass.opacity = Math.max(0, 0.53 - frame * 0.018);
+    glass.opacity = Math.max(0, glassStartOpacity * (1 - frame / 30));
 
     if (frame <= 30) return;
     clearInterval(fadeTimer);
@@ -1052,7 +1067,7 @@ function animate(ms) {
 
   if (talking) {
     headEcho.rotation.x = Math.sin(t * 2) * 0.025;
-    glass.emissiveIntensity = 0.08 + Math.sin(t * 5) * 0.015;
+    glass.emissiveIntensity = 0;
   }
 
   // Монітор невеликий, тому 15 оновлень за секунду достатньо.

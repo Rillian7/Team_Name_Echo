@@ -14,18 +14,21 @@ export function createHologram(T, softwareMode = false) {
   // Lightly frosted memory glass, using the existing single material pass.
   // Keep the original .53 opacity: the existing release ending fades it.
   const glass = new T.MeshPhysicalMaterial({
-    color: 0xb5dcd3,
-    emissive: 0x244f47,
-    emissiveIntensity: 0.35,
-    roughness: 0.075,
-    transmission: softwareMode ? 0 : 0.72,
-    thickness: 0.16,
+    color: 0xe5fff8,
+    emissive: 0x000000,
+    emissiveIntensity: 0,
+    roughness: 0.018,
+    transmission: softwareMode ? 0 : 1,
+    thickness: 0.24,
+    attenuationColor: new T.Color(0x9ce0d2),
+    attenuationDistance: 2.5,
+    envMapIntensity: 1.6,
     ior: 1.46,
     clearcoat: 1,
     clearcoatRoughness: 0.06,
     metalness: 0,
     transparent: true,
-    opacity: 0.53,
+    opacity: softwareMode ? 0.22 : 1,
     depthWrite: false,
     side: T.FrontSide,
     vertexColors: false,
@@ -61,7 +64,7 @@ export function createHologram(T, softwareMode = false) {
           #include <opaque_fragment>`,
         );
     };
-    glass.customProgramCacheKey = () => 'echo-memory-glass-v2';
+    glass.customProgramCacheKey = () => 'echo-clear-refractive-glass-v4';
   }
 
   const echo = new T.Group();
@@ -389,7 +392,7 @@ export function createHologram(T, softwareMode = false) {
   function update(time, stress) {
     uniforms.echoTime.value = time;
     uniforms.echoStress.value = stress;
-    const fade = Math.min(1, glass.opacity / 0.53);
+    const fade = Math.min(1, glass.opacity / (softwareMode ? .22 : 1));
     contourMaterial.opacity = (0.12 + stress * 0.07) * fade;
     faceMaterial.opacity = 0.62 * fade;
   }

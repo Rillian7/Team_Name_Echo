@@ -560,12 +560,12 @@ export function createScenePolish(T, scene, api) {
       }
     }
 
-    const fade = Math.min(1, glass.opacity / 0.53);
+    const fade = Math.min(1, glass.opacity / (api.softwareMode ? .22 : 1));
     halo.material.opacity = (0.2 + Math.sin(time * 1.3) * 0.012 + fx.flash * 0.025) * fade;
     projectorGlow.material.opacity =
       (0.31 + Math.sin(time * 1.8) * 0.022 + fx.stress * 0.04) * fade;
     dimPhosphor.opacity = 0.19 + fx.stress * 0.08;
-    glass.emissiveIntensity = 0.08 + fx.stress * 0.04 + fx.flash * 0.06;
+    glass.emissiveIntensity = 0;
     skyLamp.intensity = 3.4 + fx.stress * 1.4 + fx.flash * 1.8;
     moteMaterial.opacity = (0.2 + fx.stress * 0.13) * fade;
     hologram.update(time, fx.stress);
