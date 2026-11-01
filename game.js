@@ -11,12 +11,12 @@
 
 import * as T from './vendor/three.module.js';
 import { SoftwareRenderer } from './software-renderer.js';
-import { createScenePolish } from './scene-polish.js?v=female-voice-9';
-import { createHologram } from './hologram.js?v=female-voice-9';
+import { createScenePolish } from './scene-polish.js?v=arms-10';
+import { createHologram } from './hologram.js?v=arms-10';
 import { installDeveloperMenu } from './session-config.js';
-import { createAtmosphere } from './atmosphere.js?v=female-voice-9';
-import { createInteractionPolish } from './interaction-polish.js?v=female-voice-9';
-import { addDeskEasterEggs } from './desk-easter-eggs.js?v=female-voice-9';
+import { createAtmosphere } from './atmosphere.js?v=arms-10';
+import { createInteractionPolish } from './interaction-polish.js?v=arms-10';
+import { addDeskEasterEggs } from './desk-easter-eggs.js?v=arms-10';
 const $ = (id) => document.getElementById(id);
 let renderer;
 let softwareMode = false;

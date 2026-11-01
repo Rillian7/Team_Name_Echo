@@ -157,14 +157,19 @@ export function createHologram(T, softwareMode = false) {
   // All three subjects are women. Shape the existing asset in place without
   // replacing its single indexed mesh or adding per-frame deformation work.
   const position = bodyGeometry.getAttribute('position');
+  const smoothstep = (a,b,v) => { const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t); };
   for (let i = 0; i < position.count; i++) {
-    const y = position.getY(i);
-    const shoulderInfluence = Math.max(0, 1 - Math.abs(y - 1.71) / 0.39);
-    const waist = Math.max(0, 1 - Math.abs(y - 1.32) / .24);
-    const hips = Math.max(0, 1 - Math.abs(y - 1.02) / .22);
-    const x = position.getX(i);
-    position.setX(i, x * (1 - .33 * shoulderInfluence - .07 * waist + .065 * hips));
-    if (Math.abs(x) > .22) position.setY(i, y - .055 * shoulderInfluence);
+    const x=position.getX(i), y=position.getY(i);
+    const shoulderInfluence=Math.exp(-Math.pow((y-1.72)/.31,2));
+    const waist=Math.exp(-Math.pow((y-1.32)/.19,2));
+    const hips=Math.exp(-Math.pow((y-1.02)/.18,2));
+    const arm=smoothstep(.19,.31,Math.abs(x))*smoothstep(.82,1.1,y);
+    const torsoX=x*(1-.29*shoulderInfluence-.07*waist+.065*hips);
+    // Move the entire arm inward together, rather than pinching its shoulder
+    // while leaving the elbow outside. Smooth weights keep the joint continuous.
+    const armX=x-Math.sign(x)*.105;
+    position.setX(i,torsoX*(1-arm)+armX*arm);
+    position.setY(i,y-.035*shoulderInfluence*smoothstep(.15,.3,Math.abs(x)));
   }
   position.needsUpdate = true;
   const bodyColors = new Float32Array(humanBody.positions.length);
@@ -363,31 +368,8 @@ export function createHologram(T, softwareMode = false) {
     faceMaterial,
     headEcho,
   );
-  const contourSegments = [];
-  for (const side of [-1, 1]) {
-    contourSegments.push(
-      [
-        [side * 0.06, 1.91, 0.091],
-        [side * 0.18, 1.865, 0.121],
-      ],
-      [
-        [side * 0.18, 1.865, 0.121],
-        [side * 0.275, 1.86, 0.082],
-      ],
-      [
-        [side * 0.209, 1.47, 0.025],
-        [side * 0.245, 1.34, 0.022],
-      ],
-      [
-        [side * 0.39, 1.39, 0.081],
-        [side * 0.363, 1.22, 0.109],
-      ],
-    );
-  }
-  for (const segment of contourSegments) {
-    for (const point of segment) point[0] *= 0.88;
-  }
-  lines(contourSegments, contourMaterial, body);
+  // Reflection highlights describe the real surface. Detached decorative arm
+  // segments were removed because they no longer followed the reshaped joints.
 
   function update(time, stress) {
     uniforms.echoTime.value = time;
