@@ -1,11 +1,199 @@
 // Actual CPU-projected 3D fallback for browsers without a WebGL context.
 import * as T from './vendor/three.module.js';
-export class SoftwareRenderer{
- constructor(canvas){this.domElement=canvas;this.ctx=canvas.getContext('2d');this.shadowMap={};this.info={render:{calls:0,triangles:0}};this.cache=new WeakMap();this.last=0;}
- setPixelRatio(){}setSize(w,h){this.domElement.width=Math.min(w,1600);this.domElement.height=Math.round(h*this.domElement.width/w);this.w=this.domElement.width;this.h=this.domElement.height;}
- render(scene,camera){const now=performance.now();if(now-this.last<42)return;this.last=now;scene.updateMatrixWorld();camera.updateMatrixWorld();camera.matrixWorldInverse.copy(camera.matrixWorld).invert();const vp=new T.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse),ctx=this.ctx,w=this.w,h=this.h,faces=[];ctx.fillStyle='#24342c';ctx.fillRect(0,0,w,h);const tmp=new T.Vector3(),norm=new T.Vector3(),ab=new T.Vector3(),ac=new T.Vector3(),sun=new T.Vector3(-.2,.9,.4).normalize();
- scene.traverseVisible(o=>{if(!o.isMesh||!o.material||o.material.opacity<.07)return;let data=this.cache.get(o.geometry);if(!data){const g=o.geometry,pos=g.attributes.position,idx=g.index;data={pos,indices:idx?Array.from(idx.array):Array.from({length:pos.count},(_,i)=>i)};this.cache.set(g,data);}const pts=[],world=[];for(let i=0;i<data.pos.count;i++){tmp.fromBufferAttribute(data.pos,i).applyMatrix4(o.matrixWorld);world.push(tmp.clone());const p=tmp.clone().applyMatrix4(vp);pts.push({x:(p.x*.5+.5)*w,y:(-.5*p.y+.5)*h,z:p.z});}const m=o.material;for(let i=0;i<data.indices.length;i+=3){const [a,b,c]=data.indices.slice(i,i+3),p=pts[a],q=pts[b],r=pts[c];if(p.z>1||q.z>1||r.z>1||p.z< -1||q.z< -1||r.z< -1)continue;if((p.x<0&&q.x<0&&r.x<0)||(p.x>w&&q.x>w&&r.x>w)||(p.y<0&&q.y<0&&r.y<0)||(p.y>h&&q.y>h&&r.y>h))continue;const area=(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);if(area>=0&&m.side!==T.DoubleSide)continue;ab.subVectors(world[b],world[a]);ac.subVectors(world[c],world[a]);norm.crossVectors(ab,ac).normalize();const center=world[a].clone().add(world[b]).add(world[c]).multiplyScalar(1/3);let intensity=.44+Math.max(0,norm.dot(sun))*.6;let warm=Math.max(0,1-center.distanceTo(new T.Vector3(2.3,1.65,2.3))/3.7)*.7;const color=m.color||new T.Color(0xdddddd);const em=m.emissive||new T.Color(0);const fog=Math.min(.65,center.distanceTo(camera.position)*.025);let red=Math.min(255,Math.pow(color.r,.454)*255*(intensity+warm*.6)+em.r*90),green=Math.min(255,Math.pow(color.g,.454)*255*(intensity+warm*.22)+em.g*90),blue=Math.min(255,Math.pow(color.b,.454)*255*intensity+em.b*90);red=red*(1-fog)+30*fog;green=green*(1-fog)+48*fog;blue=blue*(1-fog)+37*fog;faces.push({p,q,r,z:(p.z+q.z+r.z)/3,color:`rgb(${red|0},${green|0},${blue|0})`,alpha:m.transparent?m.opacity:1,glass:m.isMeshPhysicalMaterial&&m.opacity>.1,map:m.map,uv:o.geometry.attributes.uv,idx:[a,b,c]});}});
- faces.sort((a,b)=>b.z-a.z);for(const f of faces){ctx.globalAlpha=f.alpha;ctx.fillStyle=f.color;ctx.beginPath();ctx.moveTo(f.p.x,f.p.y);ctx.lineTo(f.q.x,f.q.y);ctx.lineTo(f.r.x,f.r.y);ctx.closePath();ctx.fill();if(f.glass){ctx.strokeStyle='#c7e1d0';ctx.globalAlpha=.13;ctx.lineWidth=.6;ctx.stroke();}if(f.map?.image&&f.uv){const im=f.map.image,uv=f.uv,[a,b,c]=f.idx;const u0=uv.getX(a)*im.width,v0=(1-uv.getY(a))*im.height,u1=uv.getX(b)*im.width,v1=(1-uv.getY(b))*im.height,u2=uv.getX(c)*im.width,v2=(1-uv.getY(c))*im.height;const d=u0*(v1-v2)+u1*(v2-v0)+u2*(v0-v1);if(Math.abs(d)>.01){ctx.save();ctx.clip();const ax=(f.p.x*(v1-v2)+f.q.x*(v2-v0)+f.r.x*(v0-v1))/d,ay=(f.p.y*(v1-v2)+f.q.y*(v2-v0)+f.r.y*(v0-v1))/d,bx=(f.p.x*(u2-u1)+f.q.x*(u0-u2)+f.r.x*(u1-u0))/d,by=(f.p.y*(u2-u1)+f.q.y*(u0-u2)+f.r.y*(u1-u0))/d,cx=(f.p.x*(u1*v2-u2*v1)+f.q.x*(u2*v0-u0*v2)+f.r.x*(u0*v1-u1*v0))/d,cy=(f.p.y*(u1*v2-u2*v1)+f.q.y*(u2*v0-u0*v2)+f.r.y*(u0*v1-u1*v0))/d;ctx.setTransform(ax,ay,bx,by,cx,cy);ctx.globalAlpha=1;ctx.drawImage(im,0,0);ctx.restore();}}}ctx.globalAlpha=1;
- // Project actual crack polylines too.
- scene.traverseVisible(o=>{if(!o.isLine||o.isLineSegments||!o.geometry.attributes.position)return;const pos=o.geometry.attributes.position;ctx.strokeStyle=o.material.color?'#'+o.material.color.getHexString():'#d7e9d3';ctx.lineWidth=.8;ctx.globalAlpha=o.material.opacity;ctx.beginPath();for(let i=0;i<pos.count;i++){tmp.fromBufferAttribute(pos,i).applyMatrix4(o.matrixWorld).applyMatrix4(vp);const x=(tmp.x*.5+.5)*w,y=(-tmp.y*.5+.5)*h;if(tmp.z>1||tmp.z< -1)continue;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();});ctx.globalAlpha=1;this.info.render={calls:faces.length,triangles:faces.length};}
+export class SoftwareRenderer {
+  constructor(canvas) {
+    this.domElement = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.shadowMap = {};
+    this.info = { render: { calls: 0, triangles: 0 } };
+    this.cache = new WeakMap();
+    this.last = 0;
+  }
+  // CPU-only fallback: avoid rasterizing a full HD frame without WebGL.
+  setPixelRatio() {}
+  setSize(w, h) {
+    this.domElement.width = Math.min(w, 1100);
+    this.domElement.height = Math.round((h * this.domElement.width) / w);
+    this.w = this.domElement.width;
+    this.h = this.domElement.height;
+  }
+  render(scene, camera) {
+    const now = performance.now();
+    if (now - this.last < 42) return;
+    this.last = now;
+    scene.updateMatrixWorld();
+    camera.updateMatrixWorld();
+    camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+    const vp = new T.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+      ctx = this.ctx,
+      w = this.w,
+      h = this.h,
+      faces = [];
+    ctx.fillStyle = '#24342c';
+    ctx.fillRect(0, 0, w, h);
+    const tmp = new T.Vector3(),
+      norm = new T.Vector3(),
+      ab = new T.Vector3(),
+      ac = new T.Vector3(),
+      sun = new T.Vector3(-0.2, 0.9, 0.4).normalize();
+    scene.traverseVisible((o) => {
+      if (!o.isMesh || !o.material || o.material.opacity < 0.07) return;
+      let data = this.cache.get(o.geometry);
+      if (!data) {
+        const g = o.geometry,
+          pos = g.attributes.position,
+          idx = g.index;
+        data = {
+          pos,
+          colors: g.attributes.color,
+          indices: idx ? Array.from(idx.array) : Array.from({ length: pos.count }, (_, i) => i),
+        };
+        this.cache.set(g, data);
+      }
+      const pts = [],
+        world = [];
+      for (let i = 0; i < data.pos.count; i++) {
+        tmp.fromBufferAttribute(data.pos, i).applyMatrix4(o.matrixWorld);
+        world.push(tmp.clone());
+        const p = tmp.clone().applyMatrix4(vp);
+        pts.push({ x: (p.x * 0.5 + 0.5) * w, y: (-0.5 * p.y + 0.5) * h, z: p.z });
+      }
+      const m = o.material;
+      for (let i = 0; i < data.indices.length; i += 3) {
+        const [a, b, c] = data.indices.slice(i, i + 3),
+          p = pts[a],
+          q = pts[b],
+          r = pts[c];
+        if (p.z > 1 || q.z > 1 || r.z > 1 || p.z < -1 || q.z < -1 || r.z < -1) continue;
+        if (
+          (p.x < 0 && q.x < 0 && r.x < 0) ||
+          (p.x > w && q.x > w && r.x > w) ||
+          (p.y < 0 && q.y < 0 && r.y < 0) ||
+          (p.y > h && q.y > h && r.y > h)
+        )
+          continue;
+        const area = (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+        if (area >= 0 && m.side !== T.DoubleSide) continue;
+        ab.subVectors(world[b], world[a]);
+        ac.subVectors(world[c], world[a]);
+        norm.crossVectors(ab, ac).normalize();
+        const center = world[a]
+          .clone()
+          .add(world[b])
+          .add(world[c])
+          .multiplyScalar(1 / 3);
+        let intensity = 0.44 + Math.max(0, norm.dot(sun)) * 0.6;
+        let warm = Math.max(0, 1 - center.distanceTo(new T.Vector3(2.3, 1.65, 2.3)) / 3.7) * 0.7;
+        const color = m.color || new T.Color(0xdddddd);
+        const em = m.emissive || new T.Color(0);
+        // Honor the new human mesh's facial/hair tones without a GPU shader.
+        const colors = m.vertexColors && data.colors;
+        const tintR = colors ? (colors.getX(a) + colors.getX(b) + colors.getX(c)) / 3 : 1;
+        const tintG = colors ? (colors.getY(a) + colors.getY(b) + colors.getY(c)) / 3 : 1;
+        const tintB = colors ? (colors.getZ(a) + colors.getZ(b) + colors.getZ(c)) / 3 : 1;
+        const fog = Math.min(0.65, center.distanceTo(camera.position) * 0.025);
+        let red = Math.min(
+            255,
+            Math.pow(color.r * tintR, 0.454) * 255 * (intensity + warm * 0.6) + em.r * 90,
+          ),
+          green = Math.min(
+            255,
+            Math.pow(color.g * tintG, 0.454) * 255 * (intensity + warm * 0.22) + em.g * 90,
+          ),
+          blue = Math.min(255, Math.pow(color.b * tintB, 0.454) * 255 * intensity + em.b * 90);
+        red = red * (1 - fog) + 30 * fog;
+        green = green * (1 - fog) + 48 * fog;
+        blue = blue * (1 - fog) + 37 * fog;
+        faces.push({
+          p,
+          q,
+          r,
+          z: (p.z + q.z + r.z) / 3,
+          color: `rgb(${red | 0},${green | 0},${blue | 0})`,
+          alpha: m.transparent ? m.opacity : 1,
+          glass: m.isMeshPhysicalMaterial && m.opacity > 0.1,
+          map: m.map,
+          uv: o.geometry.attributes.uv,
+          idx: [a, b, c],
+        });
+      }
+    });
+    faces.sort((a, b) => b.z - a.z);
+    for (const f of faces) {
+      ctx.globalAlpha = f.alpha;
+      ctx.fillStyle = f.color;
+      ctx.beginPath();
+      ctx.moveTo(f.p.x, f.p.y);
+      ctx.lineTo(f.q.x, f.q.y);
+      ctx.lineTo(f.r.x, f.r.y);
+      ctx.closePath();
+      ctx.fill();
+      if (f.glass) {
+        ctx.strokeStyle = '#c7e1d0';
+        ctx.globalAlpha = 0.13;
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+      if (f.map?.image && f.uv) {
+        const im = f.map.image,
+          uv = f.uv,
+          [a, b, c] = f.idx;
+        const u0 = uv.getX(a) * im.width,
+          v0 = (1 - uv.getY(a)) * im.height,
+          u1 = uv.getX(b) * im.width,
+          v1 = (1 - uv.getY(b)) * im.height,
+          u2 = uv.getX(c) * im.width,
+          v2 = (1 - uv.getY(c)) * im.height;
+        const d = u0 * (v1 - v2) + u1 * (v2 - v0) + u2 * (v0 - v1);
+        if (Math.abs(d) > 0.01) {
+          ctx.save();
+          ctx.clip();
+          const ax = (f.p.x * (v1 - v2) + f.q.x * (v2 - v0) + f.r.x * (v0 - v1)) / d,
+            ay = (f.p.y * (v1 - v2) + f.q.y * (v2 - v0) + f.r.y * (v0 - v1)) / d,
+            bx = (f.p.x * (u2 - u1) + f.q.x * (u0 - u2) + f.r.x * (u1 - u0)) / d,
+            by = (f.p.y * (u2 - u1) + f.q.y * (u0 - u2) + f.r.y * (u1 - u0)) / d,
+            cx =
+              (f.p.x * (u1 * v2 - u2 * v1) +
+                f.q.x * (u2 * v0 - u0 * v2) +
+                f.r.x * (u0 * v1 - u1 * v0)) /
+              d,
+            cy =
+              (f.p.y * (u1 * v2 - u2 * v1) +
+                f.q.y * (u2 * v0 - u0 * v2) +
+                f.r.y * (u0 * v1 - u1 * v0)) /
+              d;
+          ctx.setTransform(ax, ay, bx, by, cx, cy);
+          ctx.globalAlpha = 1;
+          ctx.drawImage(im, 0, 0);
+          ctx.restore();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    // Project damage polylines and the selective face/clavicle segments.
+    scene.traverseVisible((o) => {
+      if (!o.isLine || !o.geometry.attributes.position || o.material.opacity < 0.01) return;
+      const pos = o.geometry.attributes.position;
+      ctx.strokeStyle = o.material.color ? '#' + o.material.color.getHexString() : '#d7e9d3';
+      ctx.lineWidth = 0.8;
+      ctx.globalAlpha = o.material.opacity;
+      ctx.beginPath();
+      let penDown = false;
+      for (let i = 0; i < pos.count; i++) {
+        tmp.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld).applyMatrix4(vp);
+        const x = (tmp.x * 0.5 + 0.5) * w,
+          y = (-tmp.y * 0.5 + 0.5) * h;
+        if (tmp.z > 1 || tmp.z < -1) {
+          penDown = false;
+          continue;
+        }
+        if (!penDown || (o.isLineSegments && i % 2 === 0)) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+        penDown = true;
+      }
+      ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+    this.info.render = { calls: faces.length, triangles: faces.length };
+  }
 }
