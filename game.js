@@ -11,12 +11,12 @@
 
 import * as T from './vendor/three.module.js';
 import { SoftwareRenderer } from './software-renderer.js';
-import { createScenePolish } from './scene-polish.js?v=glass-piano-4';
-import { createHologram } from './hologram.js?v=glass-piano-4';
+import { createScenePolish } from './scene-polish.js?v=glass-piano-5';
+import { createHologram } from './hologram.js?v=glass-piano-5';
 import { installDeveloperMenu } from './session-config.js';
-import { createAtmosphere } from './atmosphere.js?v=glass-piano-4';
-import { createInteractionPolish } from './interaction-polish.js?v=glass-piano-4';
-import { addDeskEasterEggs } from './desk-easter-eggs.js?v=glass-piano-4';
+import { createAtmosphere } from './atmosphere.js?v=glass-piano-5';
+import { createInteractionPolish } from './interaction-polish.js?v=glass-piano-5';
+import { addDeskEasterEggs } from './desk-easter-eggs.js?v=glass-piano-5';
 const $ = (id) => document.getElementById(id);
 let renderer;
 let softwareMode = false;
@@ -594,7 +594,7 @@ let archiveOpen = false, archiveHeard = false;
 let audio,master,humGain,muted=false,voiceEnabled=true,talking=false;function initAudio(){if(audio)return;audio=new (window.AudioContext||window.webkitAudioContext)();master=audio.createGain();master.gain.value=.65;master.connect(audio.destination);humGain=audio.createGain();humGain.gain.value=.025;humGain.connect(master);for(const f of [55,110,164]){let o=audio.createOscillator();o.frequency.value=f;o.type='sine';o.connect(humGain);o.start();}}
 function tone(f=400,d=.15,v=.08,type='sine'){if(!audio)return;const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+d);o.connect(g);g.connect(master);o.start();o.stop(audio.currentTime+d);}
 function crackSound(volume=.22){if(!audio)return;const n=audio.createBuffer(1,audio.sampleRate*.22,audio.sampleRate);const a=n.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=(Math.random()*2-1)*Math.pow(1-i/a.length,5);let s=audio.createBufferSource(),g=audio.createGain(),f=audio.createBiquadFilter();s.buffer=n;f.type='highpass';f.frequency.value=1700;g.gain.value=volume;s.connect(f);f.connect(g);g.connect(master);s.start();tone(1750,.7,.035);}
-function speak(en,speaker){if(!('speechSynthesis'in window)||muted||!voiceEnabled)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(en);const voices=window.speechSynthesis.getVoices();const english=voices.filter(v=>/^en/.test(v.lang));u.voice=english.find(v=>speaker==='ВІДЛУННЯ'?/female|samantha|zira|aria|jenny/i.test(v.name):/daniel|david|guy|george/i.test(v.name))||english[0]||null;u.lang='en-US';u.rate=.83;if(speaker==='ВІДЛУННЯ'&&polish.fx.caseId==='019'){u.voice=english.find(v=>v!==u.voice&&/female|samantha|zira|aria|jenny|victoria|karen/i.test(v.name))||u.voice;}u.pitch=speaker==='ВІДЛУННЯ'?(polish.fx.caseId==='019'?.94:1.04):.85;u.volume=.9;u.onend=()=>talking=false;window.speechSynthesis.speak(u);}
+function speak(en,speaker){if(!('speechSynthesis'in window)||muted||!voiceEnabled)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(en);const voices=window.speechSynthesis.getVoices();const english=voices.filter(v=>/^en/.test(v.lang));const femaleSpeaker=speaker==='ВІДЛУННЯ'||/СОФІЯ|ІРИНА|ОЛЕНА|АННА/.test(speaker);u.voice=english.find(v=>femaleSpeaker?/female|samantha|zira|aria|jenny|victoria|karen/i.test(v.name):/daniel|david|guy|george/i.test(v.name))||english[0]||null;u.lang='en-US';u.rate=.83;if(speaker==='ВІДЛУННЯ'&&polish.fx.caseId==='019'){u.voice=english.find(v=>v!==u.voice&&/female|samantha|zira|aria|jenny|victoria|karen/i.test(v.name))||u.voice;}u.pitch=femaleSpeaker?(polish.fx.caseId==='019'?.94:1.04):.85;u.volume=.9;u.onend=()=>talking=false;window.speechSynthesis.speak(u);}
 let state='intro',step=0,currentLine=null,queue=[],afterQueue=null,damage=0,started=false,heard=false,docRead=false,drag=false,moved=false,lastX=0,lastY=0,yaw=0,pitch=0,reveal=false,ending=false;
 // A persistent-in-session evidence ledger: entries appear at authored moments, not from idle time.
 const evidence=[],evidenceIds=new Set();
