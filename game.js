@@ -11,12 +11,13 @@
 
 import * as T from './vendor/three.module.js';
 import { SoftwareRenderer } from './software-renderer.js';
-import { createScenePolish } from './scene-polish.js?v=voice-ready-11';
-import { createHologram } from './hologram.js?v=voice-ready-11';
+import { createScenePolish } from './scene-polish.js?v=shatter-12';
+import { createHologram } from './hologram.js?v=shatter-12';
 import { installDeveloperMenu } from './session-config.js';
-import { createAtmosphere } from './atmosphere.js?v=voice-ready-11';
-import { createInteractionPolish } from './interaction-polish.js?v=voice-ready-11';
-import { addDeskEasterEggs } from './desk-easter-eggs.js?v=voice-ready-11';
+import { createGlassShatter } from './glass-shatter.js?v=shatter-12';
+import { createAtmosphere } from './atmosphere.js?v=shatter-12';
+import { createInteractionPolish } from './interaction-polish.js?v=shatter-12';
+import { addDeskEasterEggs } from './desk-easter-eggs.js?v=shatter-12';
 const $ = (id) => document.getElementById(id);
 let renderer;
 let softwareMode = false;
@@ -574,23 +575,14 @@ if (softwareMode) {
 // 6–7. Audio, night-shift cases and interaction (Roman's story continuity)
 // ---------------------------------------------------------------------------
 
+const glassShatter=createGlassShatter(T,scene);
 function beginRelease() {
-  // Retain Patch 2's lightweight fade ending; do not add shattering meshes.
-  let frame = 0;
-  const fadeTimer = setInterval(() => {
-    frame += 1;
-    glass.opacity = Math.max(0, glassStartOpacity * (1 - frame / 30));
-
-    if (frame <= 30) return;
-    clearInterval(fadeTimer);
-    echo.visible = false;
-    hiddenEchoes.forEach((archive) => { archive.visible = false; });
-    finish(
-      'СЕАНС ЗАВЕРШЕНО',
-      'Дати договорити.',
-      'Ви зберегли пам’ять про розмову. Вперше за сорок сім сеансів нове відлуння не було створене.',
-    );
-  }, 75);
+ crackSound(.12);
+ hiddenEchoes.forEach(archive=>{archive.visible=false;});
+ glassShatter.start(echo,()=>finish(
+  'СЕАНС ЗАВЕРШЕНО','Дати договорити.',
+  'Ви зберегли пам’ять про розмову. Вперше за сорок сім сеансів нове відлуння не було створене.',
+ ));
 }
 
 const interaction = createInteractionPolish({
@@ -1140,6 +1132,7 @@ function animate(ms) {
     ceiling.intensity = 25 + Math.sin(t * 17) * 1.3;
   }
 
+  glassShatter.update(dt);
   renderer.render(scene, camera);
 }
 
