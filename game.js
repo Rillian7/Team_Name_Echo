@@ -11,12 +11,12 @@
 
 import * as T from './vendor/three.module.js';
 import { SoftwareRenderer } from './software-renderer.js';
-import { createScenePolish } from './scene-polish.js?v=arms-10';
-import { createHologram } from './hologram.js?v=arms-10';
+import { createScenePolish } from './scene-polish.js?v=voice-ready-11';
+import { createHologram } from './hologram.js?v=voice-ready-11';
 import { installDeveloperMenu } from './session-config.js';
-import { createAtmosphere } from './atmosphere.js?v=arms-10';
-import { createInteractionPolish } from './interaction-polish.js?v=arms-10';
-import { addDeskEasterEggs } from './desk-easter-eggs.js?v=arms-10';
+import { createAtmosphere } from './atmosphere.js?v=voice-ready-11';
+import { createInteractionPolish } from './interaction-polish.js?v=voice-ready-11';
+import { addDeskEasterEggs } from './desk-easter-eggs.js?v=voice-ready-11';
 const $ = (id) => document.getElementById(id);
 let renderer;
 let softwareMode = false;
@@ -609,19 +609,33 @@ let archiveOpen = false, archiveHeard = false;
 let audio,master,humGain,muted=false,voiceEnabled=true,talking=false;function initAudio(){if(audio)return;audio=new (window.AudioContext||window.webkitAudioContext)();master=audio.createGain();master.gain.value=.65;master.connect(audio.destination);humGain=audio.createGain();humGain.gain.value=.025;humGain.connect(master);for(const f of [55,110,164]){let o=audio.createOscillator();o.frequency.value=f;o.type='sine';o.connect(humGain);o.start();}}
 function tone(f=400,d=.15,v=.08,type='sine'){if(!audio)return;const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+d);o.connect(g);g.connect(master);o.start();o.stop(audio.currentTime+d);}
 function crackSound(volume=.22){if(!audio)return;const n=audio.createBuffer(1,audio.sampleRate*.22,audio.sampleRate);const a=n.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=(Math.random()*2-1)*Math.pow(1-i/a.length,5);let s=audio.createBufferSource(),g=audio.createGain(),f=audio.createBiquadFilter();s.buffer=n;f.type='highpass';f.frequency.value=1700;g.gain.value=volume;s.connect(f);f.connect(g);g.connect(master);s.start();tone(1750,.7,.035);}
-function speak(en,speaker){
+let voiceRequest=0;
+async function speak(en,speaker){
  if(!('speechSynthesis'in window)||muted||!voiceEnabled)return;
  window.speechSynthesis.cancel();
  const u=new SpeechSynthesisUtterance(en);
- const voices=window.speechSynthesis.getVoices();
+ const request=++voiceRequest;
+ const lineAtRequest=currentLine;
+ let voices=window.speechSynthesis.getVoices();
+ if(!voices.some(v=>/^en/i.test(v.lang))) {
+  await new Promise(resolve=>{
+   let timer;
+   const ready=()=>{if(window.speechSynthesis.getVoices().some(v=>/^en/i.test(v.lang))){clearTimeout(timer);window.speechSynthesis.removeEventListener?.('voiceschanged',ready);resolve();}};
+   window.speechSynthesis.addEventListener?.('voiceschanged',ready);
+   timer=setTimeout(()=>{window.speechSynthesis.removeEventListener?.('voiceschanged',ready);resolve();},1800);
+   ready();
+  });
+  voices=window.speechSynthesis.getVoices();
+ }
+ if(request!==voiceRequest||muted||ending||currentLine!==lineAtRequest||!$('document').hidden||!$('evidence').hidden)return;
  const english=voices.filter(v=>/^en/i.test(v.lang));
  const femaleSpeaker=speaker==='ВІДЛУННЯ'||/СОФІЯ|ІРИНА|ОЛЕНА|АННА/.test(speaker);
  const female=/female|samantha|zira|aria|jenny|victoria|karen|moira|tessa|susan|hazel|serena|ava|allison|shelley|catherine|nicky|sandy|zoe|joanna|salli|kimberly|ivy|kendra|amy|emma|olivia|sonia|libby|sara|michelle|natasha/i;
- const women=english.filter(v=>female.test(v.name)&&!(/\bmale\b|david|daniel|george|james|mark|guy|ryan/i.test(v.name)));
+ const women=english.filter(v=>(female.test(v.name)||/^Google US English$/i.test(v.name))&&!(/\bmale\b|david|daniel|george|james|mark|guy|ryan/i.test(v.name)));
  if(femaleSpeaker){
   // Never silently substitute the first (often male) system voice for Anna.
   u.voice=women.find(v=>/aria|samantha|jenny|ava|zira/i.test(v.name))||women[0];
-  if(!u.voice){talking=false;toast('Жіночий англійський голос недоступний у браузері. Репліка залишається в субтитрах.');return;}
+  if(!u.voice){talking=false;return;}
  }else u.voice=english.find(v=>/daniel|david|guy|george|james|ryan/i.test(v.name))||english[0]||null;
  u.lang=u.voice?.lang||'en-US';u.rate=.88;
  u.pitch=femaleSpeaker?1.08:.85;
