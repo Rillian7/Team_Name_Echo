@@ -163,8 +163,8 @@ export function createHologram(T, softwareMode = false) {
     const waist = Math.max(0, 1 - Math.abs(y - 1.32) / .24);
     const hips = Math.max(0, 1 - Math.abs(y - 1.02) / .22);
     const x = position.getX(i);
-    position.setX(i, x * (1 - .23 * shoulderInfluence - .07 * waist + .045 * hips));
-    if (Math.abs(x) > .22) position.setY(i, y - .035 * shoulderInfluence);
+    position.setX(i, x * (1 - .33 * shoulderInfluence - .07 * waist + .065 * hips));
+    if (Math.abs(x) > .22) position.setY(i, y - .055 * shoulderInfluence);
   }
   position.needsUpdate = true;
   const bodyColors = new Float32Array(humanBody.positions.length);
