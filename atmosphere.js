@@ -49,14 +49,19 @@ export function createAtmosphere({ getAudio, getView, getLights }) {
   nextNote=audio.currentTime+2.2;
   const index=noteIndex++;
   if(peak>=48&&index%4!==0||peak>=20&&index%3===1)return;
-  const osc=audio.createOscillator(),envelope=audio.createGain();
-  osc.type='sine';osc.frequency.value=melody[index%melody.length];
+  // Piano-like hammer attack and independently decaying string partials.
+  const fundamental=melody[index%melody.length];
   const now=audio.currentTime;
-  envelope.gain.setValueAtTime(0,now);
-  envelope.gain.linearRampToValueAtTime(.38,now+.15);
-  envelope.gain.exponentialRampToValueAtTime(.0001,now+3.4);
-  osc.connect(envelope);envelope.connect(bed.music);
-  osc.onended=()=>{osc.disconnect();envelope.disconnect();};osc.start();osc.stop(now+3.5);
+  for (const [multiple,level,decay] of [[1,.6,3.2],[2,.23,1.8],[3,.09,1.1],[4.01,.045,.65],[6.02,.018,.24]]) {
+   const osc=audio.createOscillator(),envelope=audio.createGain();
+   osc.type='sine';osc.frequency.value=fundamental*multiple;
+   envelope.gain.setValueAtTime(0,now);
+   envelope.gain.linearRampToValueAtTime(level,now+.006);
+   envelope.gain.exponentialRampToValueAtTime(.0001,now+decay);
+   osc.connect(envelope);envelope.connect(bed.music);
+   osc.onended=()=>{osc.disconnect();envelope.disconnect();};
+   osc.start();osc.stop(now+decay+.05);
+  }
  }
  return {update};
 }

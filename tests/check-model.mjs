@@ -27,9 +27,13 @@ for (let i = 0; i < positions.count; i++) {
 assert.ok(shouldersChecked > 5, `Only ${shouldersChecked} shoulder vertices checked`);
 
 const archive = echo.clone();
-const archiveHair = archive.getObjectByName('Anna / short polygonal bob');
+const archiveHair = archive.getObjectByName('Anna / chin-length rounded bob');
 assert.ok(archiveHair);
 archiveHair.visible = true;
 assert.equal(archiveHair.children.length, 2);
 
 console.log('PASS indexed memory-glass model; narrowed shoulders; Anna bob on main and archive characters');
+
+assert.ok(glass.isMeshPhysicalMaterial);
+assert.ok(glass.roughness < .1);
+assert.ok(glass.clearcoat > .9);

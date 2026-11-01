@@ -9,7 +9,7 @@ const humGain={gain:param()},lights={warm:{intensity:25},ceiling:{intensity:26}}
 const a=createAtmosphere({getAudio:()=>({audio,master:{},humGain}),getView:()=>v,getLights:()=>lights});
 function tick(){audio.currentTime+=2.3;a.update(audio.currentTime,1)}
 a.update(0,1);const air=params[1],music=params[2];assert(air.target>0&&music.target>0);
-tick();assert.equal(notes.length,1);const initial=air.target;
+tick();assert.equal(notes.length,5);const initial=air.target;
 v.currentLine={};tick();assert(air.target<initial/2);assert(humGain.gain.target<.025);
 v.currentLine=null;v.damage=20;tick();assert(air.target<initial);const degraded=air.target;
 v.damage=0;v.state='sisterTalk';tick();assert.equal(air.target,degraded,'Case change must not restore cozy background');

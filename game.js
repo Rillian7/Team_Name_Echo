@@ -11,12 +11,12 @@
 
 import * as T from './vendor/three.module.js';
 import { SoftwareRenderer } from './software-renderer.js';
-import { createScenePolish } from './scene-polish.js';
-import { createHologram } from './hologram.js';
+import { createScenePolish } from './scene-polish.js?v=glass-piano-3';
+import { createHologram } from './hologram.js?v=glass-piano-3';
 import { installDeveloperMenu } from './session-config.js';
-import { createAtmosphere } from './atmosphere.js?v=nightshift-2';
-import { createInteractionPolish } from './interaction-polish.js?v=nightshift-2';
-import { addDeskEasterEggs } from './desk-easter-eggs.js?v=nightshift-2';
+import { createAtmosphere } from './atmosphere.js?v=glass-piano-3';
+import { createInteractionPolish } from './interaction-polish.js?v=glass-piano-3';
+import { addDeskEasterEggs } from './desk-easter-eggs.js?v=glass-piano-3';
 const $ = (id) => document.getElementById(id);
 let renderer;
 let softwareMode = false;
@@ -1052,7 +1052,7 @@ function animate(ms) {
 
   if (talking) {
     headEcho.rotation.x = Math.sin(t * 2) * 0.025;
-    glass.emissiveIntensity = 0.35 + Math.sin(t * 5) * 0.035;
+    glass.emissiveIntensity = 0.08 + Math.sin(t * 5) * 0.015;
   }
 
   // Монітор невеликий, тому 15 оновлень за секунду достатньо.

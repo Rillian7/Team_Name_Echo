@@ -13,17 +13,22 @@ export function createHologram(T, softwareMode = false) {
 
   // Lightly frosted memory glass, using the existing single material pass.
   // Keep the original .53 opacity: the existing release ending fades it.
-  const glass = new T.MeshStandardMaterial({
+  const glass = new T.MeshPhysicalMaterial({
     color: 0xb5dcd3,
     emissive: 0x244f47,
     emissiveIntensity: 0.35,
-    roughness: 0.24,
-    metalness: 0.04,
+    roughness: 0.075,
+    transmission: softwareMode ? 0 : 0.72,
+    thickness: 0.16,
+    ior: 1.46,
+    clearcoat: 1,
+    clearcoatRoughness: 0.06,
+    metalness: 0,
     transparent: true,
     opacity: 0.53,
     depthWrite: false,
     side: T.FrontSide,
-    vertexColors: true,
+    vertexColors: false,
   });
   glass.name = 'Reconstruction / frosted memory glass';
 
@@ -86,7 +91,7 @@ export function createHologram(T, softwareMode = false) {
         if (tint === 'head') {
           // A swept-back hair silhouette, open at the brow and cheeks.
           const hairline = 0.1 - (1 - front) * 0.15;
-          if (y > hairline) shade *= 0.52;
+          if (y > hairline) shade *= 0.96;
         }
         colors.push(shade * 0.88, shade, shade * 0.96);
       }
@@ -152,7 +157,11 @@ export function createHologram(T, softwareMode = false) {
   for (let i = 0; i < position.count; i++) {
     const y = position.getY(i);
     const shoulderInfluence = Math.max(0, 1 - Math.abs(y - 1.71) / 0.39);
-    position.setX(i, position.getX(i) * (1 - 0.14 * shoulderInfluence));
+    const waist = Math.max(0, 1 - Math.abs(y - 1.32) / .24);
+    const hips = Math.max(0, 1 - Math.abs(y - 1.02) / .22);
+    const x = position.getX(i);
+    position.setX(i, x * (1 - .23 * shoulderInfluence - .07 * waist + .045 * hips));
+    if (Math.abs(x) > .22) position.setY(i, y - .035 * shoulderInfluence);
   }
   position.needsUpdate = true;
   const bodyColors = new Float32Array(humanBody.positions.length);
@@ -231,32 +240,32 @@ export function createHologram(T, softwareMode = false) {
   // from the story-fix version. Its proportions match our smaller head and it
   // reuses the original memory-glass shader (no new materials or effects).
   const annaHair = new T.Group();
-  annaHair.name = 'Anna / short polygonal bob';
+  annaHair.name = 'Anna / chin-length rounded bob';
   annaHair.visible = false;
   headEcho.add(annaHair);
 
   const bobRows = [
-    [0.028, 0.176], [0.091, 0.136], [0.130, 0.079],
-    [0.148, 0.011], [0.150, -0.067], [0.142, -0.147],
-    [0.126, -0.211],
+    [0.025, 0.202], [0.104, 0.171], [0.144, 0.116],
+    [0.157, 0.035], [0.159, -0.055], [0.156, -0.14],
+    [0.145, -0.205],
   ];
-  const hairSegments = 22;
+  const hairSegments = 40;
   const hairPositions = [];
   const hairColors = [];
   const hairIndices = [];
   for (let row = 0; row < bobRows.length; row++) {
     for (let col = 0; col <= hairSegments; col++) {
-      const angle = 0.78 + (col / hairSegments) * (Math.PI * 2 - 1.56);
+      const angle = 0.67 + (col / hairSegments) * (Math.PI * 2 - 1.34);
       const [radius, y] = bobRows[row];
       const silhouette = 1 + 0.035 * Math.cos(angle * 5 + 0.4);
-      const asymmetry = 0.009 * Math.sin(angle);
-      const tips = row === bobRows.length - 1 ? 0.011 * Math.cos(angle * 7) : 0;
+      const asymmetry = 0;
+      const tips = row === bobRows.length - 1 ? 0.002 * Math.cos(angle * 7) : 0;
       hairPositions.push(
         Math.sin(angle) * radius * silhouette,
         y + asymmetry + tips,
         Math.cos(angle) * radius * 0.93 - 0.014,
       );
-      hairColors.push(0.39, 0.54, 0.49);
+      hairColors.push(0.8, 0.92, 0.9);
     }
   }
   for (let row = 0; row < bobRows.length - 1; row++) {
@@ -277,15 +286,15 @@ export function createHologram(T, softwareMode = false) {
   const fringePositions = [];
   const fringeColors = [];
   const fringeIndices = [];
-  const fringeSegments = 10;
+  const fringeSegments = 30;
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col <= fringeSegments; col++) {
       const f = col / fringeSegments;
       const x = T.MathUtils.lerp(-0.118, 0.12, f);
-      const top = 0.15 - Math.abs(x) * 0.27;
-      const bottom = 0.031 + f * 0.055;
+      const top = 0.193 - Math.abs(x) * 0.23;
+      const bottom = 0.132 - Math.pow(Math.abs(x) / .12, 1.5) * .125;
       fringePositions.push(x, T.MathUtils.lerp(top, bottom, row / 2), 0.116 + Math.sin(f * Math.PI) * 0.022);
-      fringeColors.push(0.39, 0.54, 0.49);
+      fringeColors.push(0.8, 0.92, 0.9);
     }
   }
   for (let row = 0; row < 2; row++) {
