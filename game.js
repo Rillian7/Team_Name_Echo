@@ -14,6 +14,7 @@ import { SoftwareRenderer } from './software-renderer.js';
 import { createScenePolish } from './scene-polish.js';
 import { createHologram } from './hologram.js';
 import { installDeveloperMenu } from './session-config.js';
+import { createAtmosphere } from './atmosphere.js';
 import { createInteractionPolish } from './interaction-polish.js';
 import { addDeskEasterEggs } from './desk-easter-eggs.js';
 const $ = (id) => document.getElementById(id);
@@ -315,8 +316,7 @@ const pg = mesh(
 pg.rotation.x = -Math.PI / 2;
 target(pg, 'dossier');
 pg.rotation.z = 0.13;
-for (let i = 0; i < 5; i++)
-  box(0.5, 0.014, 0.65, -2.8, 1.01 + i * 0.016, 2.1, paper).rotation.y = 0.1;
+// The bright unused paper stack beside the bear was removed.
 // Екран монітора з осцилограмою.
 const mon = new T.Group();
 scene.add(mon);
@@ -584,6 +584,11 @@ const interaction = createInteractionPolish({
     listening, archiveOpen, archiveHeard, overlay: !$('document').hidden || !$('evidence').hidden }),
   project: (point) => new T.Vector3(...point).project(camera),
   inspectArchive: () => listen(),
+});
+const atmosphere = createAtmosphere({
+ getAudio: () => ({ audio, master, humGain }),
+ getView: () => ({ started, ending, state, damage, currentLine, listening, archiveHeard }),
+ getLights: () => ({ warm, ceiling }),
 });
 let archiveOpen = false, archiveHeard = false;
 let audio,master,humGain,muted=false,voiceEnabled=true,talking=false;function initAudio(){if(audio)return;audio=new (window.AudioContext||window.webkitAudioContext)();master=audio.createGain();master.gain.value=.65;master.connect(audio.destination);humGain=audio.createGain();humGain.gain.value=.025;humGain.connect(master);for(const f of [55,110,164]){let o=audio.createOscillator();o.frequency.value=f;o.type='sine';o.connect(humGain);o.start();}}
@@ -897,10 +902,6 @@ function deskBear() {
  if(!deskSecretReady())return;
  interaction.noseHonk();toast('Нічна зміна, камери… тільки піци бракує.');
 }
-function deskBrochure() {
- if(!deskSecretReady())return;
- toast('Phasmophobia · EMF, Spirit Box, докази. Хтось готувався до цієї зміни.');
-}
 const raycaster = new T.Raycaster();
 const pointer = new T.Vector2();
 
@@ -947,7 +948,6 @@ $('world').addEventListener('pointermove', (e) => {
           intercom: 'УВІМКНУТИ ІНТЕРКОМ',
           listen: 'СЛУХАТИ КАМЕРУ',
           bear: 'НАТИСНУТИ НА НІС',
-          brochure: 'БУКЛЕТ · PHASMOPHOBIA',
         }[h.object.userData.action]
       : '';
 
@@ -967,7 +967,6 @@ $('world').addEventListener('pointerup', (e) => {
         intercom,
         listen,
         bear: deskBear,
-        brochure: deskBrochure,
       })[h.object.userData.action]();
     }
   }
@@ -1049,6 +1048,7 @@ function animate(ms) {
 
   polish.update(t, dt);
   interaction.update(t);
+  atmosphere.update(t, dt);
 
   if (talking) {
     headEcho.rotation.x = Math.sin(t * 2) * 0.025;

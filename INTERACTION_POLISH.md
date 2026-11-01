@@ -24,3 +24,11 @@ Based on `main` at `6ec3e7881e2090e3c436aee45f558e320ce8c223`.
 ## Limits
 
 No browser visual or listening test was executed: this environment has no installed browser executable, and the browser download failed. The tests exercise real narrative functions with mocked DOM/audio, actual Three.js prop construction/raycasting, and sound event scheduling; they do not measure FPS, verify final pixel layout or evaluate sound quality on the presentation laptop. Before presenting, check label placement, desk prop visibility, mute behavior, both endings and archive audio in the actual browser.
+
+## Follow-up: quiet atmosphere and desk cleanup
+
+Removed the Phasmophobia booklet (geometry, cover texture, hit target and input handler) and the unused five-sheet bright stack at x=-2.8 beside the bear. The actual case dossier and bear remain.
+
+Added atmosphere.js: a local filtered looping ventilation bed and softly scheduled sine melody, mixed through the existing master/mute control. Anomaly damage is remembered across case changes: first notes drop out, then the melody and air fade further. Dialogue and contact audio duck the background. Archive inspection is silent; after inspection the room fill softens and the existing desk light becomes warmer/brighter. Existing release/reset sound envelopes retain control during endings. No new lights, shadow passes, remote assets or timer loops.
+
+Executed follow-up validation: check-story.cjs, check-interaction.mjs, check-atmosphere.mjs, check-model.mjs, syntax checks and diff whitespace checks passed. The new test covers cozy mixing, dialogue ducking, persistent deterioration across cases, silence, warm aftermath and ending-envelope ownership. Browser visual/audio testing remains unavailable as described above.

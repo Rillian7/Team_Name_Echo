@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {createAtmosphere} from '../atmosphere.js';
+let v={started:true,ending:false,state:'first',damage:0,currentLine:null,listening:false,archiveHeard:false};
+const params=[],notes=[];
+const param=()=>{const p={value:0,cancelScheduledValues(){},setTargetAtTime(value){this.target=value},setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}};params.push(p);return p};
+const node=()=>({connect(){},disconnect(){}});
+const audio={currentTime:0,sampleRate:100,createBuffer:()=>({getChannelData:()=>new Float32Array(300)}),createBufferSource:()=>({...node(),start(){}}),createBiquadFilter:()=>({...node(),frequency:{}}),createGain:()=>({...node(),gain:param()}),createOscillator:()=>({...node(),frequency:{},start(){notes.push(audio.currentTime)},stop(){}})};
+const humGain={gain:param()},lights={warm:{intensity:25},ceiling:{intensity:26}};
+const a=createAtmosphere({getAudio:()=>({audio,master:{},humGain}),getView:()=>v,getLights:()=>lights});
+function tick(){audio.currentTime+=2.3;a.update(audio.currentTime,1)}
+a.update(0,1);const air=params[1],music=params[2];assert(air.target>0&&music.target>0);
+tick();assert.equal(notes.length,1);const initial=air.target;
+v.currentLine={};tick();assert(air.target<initial/2);assert(humGain.gain.target<.025);
+v.currentLine=null;v.damage=20;tick();assert(air.target<initial);const degraded=air.target;
+v.damage=0;v.state='sisterTalk';tick();assert.equal(air.target,degraded,'Case change must not restore cozy background');
+v.damage=48;tick();assert(air.target<degraded);
+v.state='archiveInspect';tick();assert.equal(air.target,0);assert.equal(music.target,0);
+v.archiveHeard=true;v.state='truth';tick();assert.equal(humGain.gain.target,0);assert.equal(lights.warm.intensity,30);assert(lights.ceiling.intensity<26);
+v.state='reset';v.ending=true;humGain.gain.target=.123;tick();assert.equal(humGain.gain.target,.123,'Do not override the reset ending sound envelope');
+console.log('PASS cozy start, speech ducking, persistent missing-note progression, archive silence, warm quiet aftermath, ending envelope ownership');
