@@ -241,7 +241,7 @@ export function createHologram(T, softwareMode = false) {
   // reuses the original memory-glass shader (no new materials or effects).
   const annaHair = new T.Group();
   annaHair.name = 'Anna / chin-length rounded bob';
-  annaHair.visible = true;
+  annaHair.visible = false;
   headEcho.add(annaHair);
 
   const bobRows = [

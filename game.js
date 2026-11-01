@@ -11,12 +11,12 @@
 
 import * as T from './vendor/three.module.js';
 import { SoftwareRenderer } from './software-renderer.js';
-import { createScenePolish } from './scene-polish.js?v=glass-piano-5';
-import { createHologram } from './hologram.js?v=glass-piano-5';
+import { createScenePolish } from './scene-polish.js?v=glass-piano-6';
+import { createHologram } from './hologram.js?v=glass-piano-6';
 import { installDeveloperMenu } from './session-config.js';
-import { createAtmosphere } from './atmosphere.js?v=glass-piano-5';
-import { createInteractionPolish } from './interaction-polish.js?v=glass-piano-5';
-import { addDeskEasterEggs } from './desk-easter-eggs.js?v=glass-piano-5';
+import { createAtmosphere } from './atmosphere.js?v=glass-piano-6';
+import { createInteractionPolish } from './interaction-polish.js?v=glass-piano-6';
+import { addDeskEasterEggs } from './desk-easter-eggs.js?v=glass-piano-6';
 const $ = (id) => document.getElementById(id);
 let renderer;
 let softwareMode = false;
@@ -635,7 +635,7 @@ const developer=installDeveloperMenu();
 function dossierOpen(){if(!started||ending||state==='transition')return;docRead=true;window.speechSynthesis?.cancel();const normal=activeCase==='017',olena=activeCase==='018';logEvent('d'+activeCase,'ДОКУМЕНТ','СПРАВА '+activeCase+' / '+(normal?'ІРИНА':olena?'ОЛЕНА':'АННА'),normal?'Заявник — Софія. Контрольні дані: озеро та дерев’яний місток.':olena?'Заявник — Марта. Контрольні дані: «ластівка» та недільний чай. Позначено перший сеанс.':'Сеанс 047. Контрольний спогад: гроза та корабель під столом.');$('document').hidden=false;$('doc-title').textContent='Справа № '+activeCase;$('doc-content').innerHTML=normal?normalDoc:olena?routineDoc:sisterDoc;if(state==='first')objective('Поверніться до пульта й увімкніть інтерком.');}
 function loadCase(id){
  archiveOpen=false;archiveHeard=false;interaction.restoreHum();
- activeCase=id;docRead=false;currentLine=null;queue=[];afterQueue=null;reveal=false;polish.setArchive(false);polish.setCase(id);setDamage(0);echo.visible=true;annaHair.visible=true;headEcho.rotation.z=id==='019'?.08:0;state='first';$('case-title').textContent='СПРАВА '+id+' · '+caseNames[id];signalStatus('СПРАВА '+id+' / ГОТОВНІСТЬ');$('choices').innerHTML='';$('dialogue').hidden=true;objective('Відкрийте досьє. Потім увімкніть інтерком.');if(id==='019')startSister();
+ activeCase=id;docRead=false;currentLine=null;queue=[];afterQueue=null;reveal=false;polish.setArchive(false);polish.setCase(id);setDamage(0);echo.visible=true;annaHair.visible=id==='019';headEcho.rotation.z=id==='019'?.08:0;state='first';$('case-title').textContent='СПРАВА '+id+' · '+caseNames[id];signalStatus('СПРАВА '+id+' / ГОТОВНІСТЬ');$('choices').innerHTML='';$('dialogue').hidden=true;objective('Відкрийте досьє. Потім увімкніть інтерком.');if(id==='019')startSister();
 }
 function nextCase(){
  sessionIndex++;if(sessionIndex>=sessionOrder.length){ending=true;finish('ЗМІНУ ЗАВЕРШЕНО','Роботу завершено.','Усі вибрані справи опрацьовано. Протокол нічної зміни збережено.');return;}
